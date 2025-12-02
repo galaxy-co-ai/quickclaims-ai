@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { UploadBox } from '@/components/project/UploadBox'
 import { GenerateButton } from '@/components/project/GenerateButton'
+import { StartClaimButton } from '@/components/claims/StartClaimButton'
 import Link from 'next/link'
 import { RoadmapView, MaterialsView, EstimateView } from '@/components/project/DocumentViews'
 import { ActivityLog } from '@/components/project/ActivityLog'
@@ -11,6 +12,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
     include: {
       uploads: { orderBy: { createdAt: 'desc' } },
       documents: { orderBy: { createdAt: 'desc' } },
+      claim: true,
     },
   })
 
@@ -109,6 +111,57 @@ export default async function ProjectDetail({ params }: { params: { id: string }
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Insurance Claim Section */}
+        <div className="card-soft">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-semibold">Insurance Claim</h3>
+              <p className="text-sm text-muted-foreground">Track carrier scope, supplements, and D$/SQ</p>
+            </div>
+            {project.claim ? (
+              <Link
+                href={`/claims/${project.claim.id}`}
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+              >
+                View Claim →
+              </Link>
+            ) : (
+              <StartClaimButton projectId={project.id} />
+            )}
+          </div>
+          {project.claim ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Status</p>
+                <p className="font-medium capitalize">{project.claim.status.replace('_', ' ')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Carrier</p>
+                <p className="font-medium">{project.claim.carrier || 'Not set'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Claim #</p>
+                <p className="font-medium">{project.claim.claimNumber || 'Pending'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Deductible</p>
+                <p className="font-medium">
+                  {project.claim.deductible 
+                    ? `$${project.claim.deductible.toLocaleString()}`
+                    : 'Not set'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-muted/30 rounded-xl p-6 text-center">
+              <p className="text-muted-foreground">No claim started yet</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Start a claim to upload carrier scopes and track supplements
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Activity Log */}
