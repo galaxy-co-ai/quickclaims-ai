@@ -1,9 +1,9 @@
 # QuickClaims.ai - Project Rules
 
-Last Updated: 2025-12-02
+Last Updated: December 2, 2025
 
 ## Project Overview
-AI-powered project management platform for construction contractors. Generates roadmaps, materials lists, and cost estimates from uploaded scope documents.
+AI-powered insurance claim supplement platform for construction contractors. Parses carrier scopes, detects missing items, generates IRC-backed defense notes, and builds professional supplement packages.
 
 ## Tech Stack (Locked)
 - **Framework:** Next.js 14+ with App Router
@@ -11,7 +11,7 @@ AI-powered project management platform for construction contractors. Generates r
 - **Styling:** Tailwind CSS with custom design tokens
 - **Database:** Neon PostgreSQL via Prisma ORM
 - **File Storage:** Vercel Blob
-- **AI:** OpenAI GPT-4o
+- **AI:** OpenAI GPT-4o / GPT-4 Vision
 - **Caching:** Upstash Redis
 - **Vector Search:** Upstash Vector
 - **Deployment:** Vercel
@@ -20,6 +20,7 @@ AI-powered project management platform for construction contractors. Generates r
 Use these scopes for conventional commits:
 - `ai` - AI generation, prompts, OpenAI integration
 - `api` - API routes and endpoints
+- `claims` - Insurance claims functionality
 - `db` - Database schema, migrations, Prisma
 - `ui` - Components, pages, styling
 - `export` - CSV/PDF export functionality
@@ -30,32 +31,47 @@ Use these scopes for conventional commits:
 - `config` - Configuration, env vars, build
 
 Examples:
-- `feat(ai): add role-based labor breakdown`
+- `feat(claims): add delta detection engine`
 - `fix(upload): handle large file uploads`
 - `refactor(ui): extract Button component`
 
 ## Directory Structure
 ```
 quickclaims-ai/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── dashboard/         # Dashboard page
-│   ├── projects/[id]/     # Project detail
-│   └── layout.tsx, page.tsx
+├── app/
+│   ├── api/
+│   │   ├── ai/generate/           # AI document generation
+│   │   ├── claims/[claimId]/      # All claims endpoints
+│   │   ├── exports/               # CSV/PDF exports
+│   │   ├── projects/              # Project CRUD
+│   │   └── uploads/               # File handling
+│   ├── claims/
+│   │   ├── [id]/                  # Claim detail + checklist
+│   │   ├── analytics/             # D$/SQ analytics
+│   │   └── page.tsx               # Claims list
+│   ├── dashboard/                 # AI concierge
+│   └── projects/[id]/             # Project detail
 ├── components/
-│   ├── project/           # Project-specific components
-│   └── ui/                # Reusable primitives (Button, Input, Card, Label)
-├── docs/
-│   ├── CURRENT_SESSION.md # Active session status
-│   └── sessions/          # Archived sessions
+│   ├── claims/                    # Claim-specific components
+│   ├── project/                   # Project components
+│   └── ui/                        # Reusable primitives
 ├── lib/
-│   ├── ai/                # AI utilities (openai.ts, guidance.ts)
-│   ├── extract/           # File extraction (scope.ts)
-│   ├── types/             # Shared TypeScript types
-│   └── validations/       # Zod schemas
+│   ├── ai/                        # OpenAI utilities
+│   ├── claims/                    # Claims logic
+│   │   ├── irc-codes.ts           # IRC references
+│   │   ├── photo-analysis.ts      # GPT-4 Vision
+│   │   ├── photo-checklist.ts     # Build day checklist
+│   │   ├── schemas.ts             # Status definitions
+│   │   ├── scope-parser.ts        # Scope extraction
+│   │   ├── workflow.ts            # Stage tracking
+│   │   ├── xactimate-codes.ts     # Code library
+│   │   └── xactimate-export.ts    # ESX export
+│   ├── extract/                   # PDF extraction
+│   └── validations/               # Zod schemas
 ├── prisma/
 │   └── schema.prisma
-└── WARP.md                # This file
+├── README.md                      # Full project docs
+└── WARP.md                        # This file
 ```
 
 ## Code Standards
@@ -90,10 +106,10 @@ Follows GalaxyCo.ai design tokens:
 - **Card pattern:** `bg-card rounded-2xl border border-border shadow-soft p-6`
 - **Colors:** Use CSS variables (--primary, --foreground, etc.)
 
-## Session Management
-- Read `docs/CURRENT_SESSION.md` at session start
-- Update it at session end with changes made
-- Archive completed sessions to `docs/sessions/YYYY-MM-DD.md`
+## Documentation
+- **README.md** is the single source of truth for project status
+- Update README.md when completing major features
+- No separate session files needed - keep README.md current
 
 ## Testing
 - Test commands manually before committing
