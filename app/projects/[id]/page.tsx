@@ -54,7 +54,23 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                       <p className="font-medium">{u.fileName}</p>
                       <p className="text-xs text-muted-foreground">{u.fileType} · {(u.fileSize/1024/1024).toFixed(2)} MB</p>
                     </div>
-                    <Link href={u.fileUrl} className="text-primary underline" target="_blank">View</Link>
+                    <div className="flex items-center gap-3">
+                      <Link href={u.fileUrl} className="text-primary underline" target="_blank">View</Link>
+                      <form action={`/api/uploads/${u.id}`} method="post" className="flex items-center gap-2" onSubmit={(e)=>{}}>
+                        {/* Rename via JS fetch - simple prompt */}
+                        <button type="button" className="text-sm text-foreground/70 hover:text-foreground" onClick={async()=>{
+                          const name = prompt('Rename file', `${u.fileName}`)
+                          if(!name) return
+                          await fetch(`/api/uploads/${u.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fileName: name }) })
+                          location.reload()
+                        }}>Rename</button>
+                        <button type="button" className="text-sm text-destructive hover:opacity-80" onClick={async()=>{
+                          if(!confirm('Delete this file?')) return
+                          await fetch(`/api/uploads/${u.id}`, { method: 'DELETE' })
+                          location.reload()
+                        }}>Delete</button>
+                      </form>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -64,7 +80,12 @@ export default async function ProjectDetail({ params }: { params: { id: string }
           <div className="card-soft space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold">AI Documents</h3>
-              <GenerateButton projectId={project.id} />
+              <div className="flex gap-2">
+                <a href={`/api/exports/${project.id}/materials.csv`} className="h-10 px-4 py-2 rounded-xl border border-border text-sm">Materials CSV</a>
+                <a href={`/api/exports/${project.id}/estimate.csv`} className="h-10 px-4 py-2 rounded-xl border border-border text-sm">Estimate CSV</a>
+                <a href={`/api/exports/${project.id}/estimate/pdf`} className="h-10 px-4 py-2 rounded-xl border border-border text-sm">Estimate PDF</a>
+                <GenerateButton projectId={project.id} />
+              </div>
             </div>
 
             <div className="space-y-3">

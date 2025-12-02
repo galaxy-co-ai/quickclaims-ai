@@ -11,6 +11,8 @@ export async function generateProjectDocuments(
     projectType: string
   },
   scopeContent?: string,
+  retrievalContext?: string,
+  typeGuidance?: string,
   photos?: string[]
 ) {
   const systemPrompt = `You are an expert construction project manager and estimator. You always return strictly valid JSON following the exact schema requested, with no additional commentary.`
@@ -23,6 +25,8 @@ Project Details:
 - address: ${projectData.address}
 - type: ${projectData.projectType}
 ${scopeContent ? `- scope_text: """\n${scopeContent}\n"""` : ''}
+${retrievalContext ? `- retrieval_context: """\n${retrievalContext}\n"""` : ''}
+${typeGuidance ? `- type_guidance: ${typeGuidance}` : ''}
 
 Return a single JSON object with these keys and shapes:
 {
