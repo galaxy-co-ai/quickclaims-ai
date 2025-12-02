@@ -11,7 +11,7 @@ function toCsv(rows: any[], headers: string[]): string {
   return [headers.join(','), ...rows.map(r => headers.map(h => esc(r[h])).join(','))].join('\n')
 }
 
-export async function GET(_: Request, { params }: { params: { projectId: string } }) {
+export async function GET(_: Request, { params }: any) {
   const docs = await db.document.findMany({ where: { projectId: params.projectId, type: 'materials' } })
   if (!docs.length) return new NextResponse('No materials', { status: 404 })
   const items = (docs[0].content as any)?.items ?? []

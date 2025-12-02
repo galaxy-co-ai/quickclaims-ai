@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import PDFDocument from 'pdfkit'
 
-export async function GET(_: Request, { params }: { params: { projectId: string } }) {
+export async function GET(_: Request, { params }: any) {
   const docs = await db.document.findMany({ where: { projectId: params.projectId, type: 'estimate' } })
   if (!docs.length) return new NextResponse('No estimate', { status: 404 })
   const est = docs[0].content as any
