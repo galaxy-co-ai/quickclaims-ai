@@ -3,6 +3,7 @@ import { UploadBox } from '@/components/project/UploadBox'
 import { GenerateButton } from '@/components/project/GenerateButton'
 import Link from 'next/link'
 import { RoadmapView, MaterialsView, EstimateView } from '@/components/project/DocumentViews'
+import { ActivityLog } from '@/components/project/ActivityLog'
 
 export default async function ProjectDetail({ params }: { params: { id: string } }) {
   const project = await db.project.findUnique({
@@ -78,13 +79,16 @@ export default async function ProjectDetail({ params }: { params: { id: string }
           </div>
 
           <div className="card-soft space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">AI Documents</h3>
-              <div className="flex gap-2">
-                <a href={`/api/exports/${project.id}/materials.csv`} className="h-10 px-4 py-2 rounded-xl border border-border text-sm">Materials CSV</a>
-                <a href={`/api/exports/${project.id}/estimate.csv`} className="h-10 px-4 py-2 rounded-xl border border-border text-sm">Estimate CSV</a>
-                <a href={`/api/exports/${project.id}/estimate/pdf`} className="h-10 px-4 py-2 rounded-xl border border-border text-sm">Estimate PDF</a>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold">AI Documents</h3>
                 <GenerateButton projectId={project.id} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <a href={`/api/exports/${project.id}/materials.csv`} className="h-9 px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-muted/50">Materials CSV</a>
+                <a href={`/api/exports/${project.id}/materials/pdf`} className="h-9 px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-muted/50">Materials PDF</a>
+                <a href={`/api/exports/${project.id}/estimate.csv`} className="h-9 px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-muted/50">Estimate CSV</a>
+                <a href={`/api/exports/${project.id}/estimate/pdf`} className="h-9 px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-muted/50">Estimate PDF</a>
               </div>
             </div>
 
@@ -105,6 +109,12 @@ export default async function ProjectDetail({ params }: { params: { id: string }
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Activity Log */}
+        <div className="card-soft">
+          <h3 className="text-xl font-semibold mb-4">Activity Log</h3>
+          <ActivityLog projectId={project.id} />
         </div>
       </div>
     </div>

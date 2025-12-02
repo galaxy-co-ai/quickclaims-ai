@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { generateProjectDocuments } from '@/lib/ai/openai'
+import { generateProjectDocuments, GenerateOptions } from '@/lib/ai/openai'
 import { cacheGet, cacheSet, sha256, redis } from '@/lib/cache'
 import { ingestScope, searchScope } from '@/lib/vector'
 import { typeGuidance } from '@/lib/ai/guidance'
+import { logActivity } from '@/lib/activity'
 
 export async function POST(request: NextRequest) {
   try {
-    const { projectId } = await request.json()
+    const body = await request.json()
+    const { projectId, options } = body as { projectId: string; options?: GenerateOptions }
     
     if (!projectId) {
       return NextResponse.json(
@@ -35,8 +37,9 @@ export async function POST(request: NextRequest) {
       data: { status: 'analyzing' },
     })
 
-    // Prepare cache key
-    const baseString = `${project.clientName}|${project.address}|${project.projectType}`
+    // Prepare cache key (include options in key)
+    const optionsKey = options ? `|t${options.temperature ?? 0.7}|d${options.detailLevel ?? 'standard'}` : ''
+    const baseString = `${project.clientName}|${project.address}|${project.projectType}${optionsKey}`
     let scopeDigest = ''
 
     // Find scope document if uploaded
@@ -75,13 +78,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Cache check
-    const cacheKey = `ai:gen:v1:${projectId}:${sha256(baseString + '|' + scopeDigest)}`
+    const cacheKey = `ai:gen:v2:${projectId}:${sha256(baseString + '|' + scopeDigest)}`
     const cached = await cacheGet<any>(cacheKey)
     if (cached) {
-      // ensure documents exist in DB as well (idempotent write skipped for brevity)
+      // Log cache hit
+      await logActivity(projectId, 'cache_hit', { cacheKey, options })
       await db.project.update({ where: { id: projectId }, data: { status: 'ready' } })
-      return NextResponse.json({ success: true, documents: cached })
+      return NextResponse.json({ success: true, documents: cached, cached: true })
     }
+
+    // Log new generation
+    await logActivity(projectId, 'generation_start', { options })
 
     // Generate documents using AI with guidance and retrieval
     const generatedDocs = await generateProjectDocuments(
@@ -92,7 +99,9 @@ export async function POST(request: NextRequest) {
       },
       scopeContent,
       retrievalContext,
-      typeGuidance(project.projectType)
+      typeGuidance(project.projectType),
+      undefined, // photos
+      options
     )
     
     // Save generated documents to database
@@ -119,8 +128,11 @@ export async function POST(request: NextRequest) {
 
     // Cache result
     await cacheSet(cacheKey, generatedDocs, 60 * 60 * 24)
+
+    // Log completion
+    await logActivity(projectId, 'generation_complete', { options })
     
-    return NextResponse.json({ success: true, documents: generatedDocs })
+    return NextResponse.json({ success: true, documents: generatedDocs, cached: false })
   } catch (error) {
     console.error('Error generating documents:', error)
     return NextResponse.json(
