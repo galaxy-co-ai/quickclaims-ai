@@ -48,6 +48,8 @@ export async function GET(_: Request, { params }: any) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
   })
 
-  const u8 = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
-  return new NextResponse(u8, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="estimate.pdf"' } })
+  const src = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+  const ab = new ArrayBuffer(src.byteLength)
+  new Uint8Array(ab).set(src)
+  return new Response(ab, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="estimate.pdf"' } })
 }
