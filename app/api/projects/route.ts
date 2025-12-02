@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = projectSchema.parse(body)
     
-    // TODO: Get userId from authentication
-    const userId = 'temp-user-id' // Replace with actual auth
+    // Using temp user for development
+    const userId = process.env.TEMP_USER_ID || 'dev-user-001'
     
     // Create project
     const project = await db.project.create({
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Get userId from authentication
-    const userId = 'temp-user-id' // Replace with actual auth
+    // Using temp user for development
+    const userId = process.env.TEMP_USER_ID || 'dev-user-001'
     
     const projects = await db.project.findMany({
       where: { userId },
