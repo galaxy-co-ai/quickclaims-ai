@@ -43,8 +43,7 @@ export async function ingestScope(projectId: string, text: string) {
 
 export async function searchScope(projectId: string, query: string, k = 8) {
   if (!vectorIndex) return [] as { chunk: string; score: number }[]
-  const ns = `project:${projectId}`
   const [qvec] = await embed([query])
-  const res = await vectorIndex.query({ vector: qvec, topK: k, namespace: ns, includeMetadata: true })
+  const res = await vectorIndex.query({ vector: qvec, topK: k, includeMetadata: true, filter: `projectId = \"${projectId}\"` })
   return res.map(r => ({ chunk: (r.metadata as any)?.text ?? '', score: r.score }))
 }
