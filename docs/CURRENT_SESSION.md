@@ -1,10 +1,10 @@
 # QuickClaims.ai - Current Session Status
 
 **Last Updated:** 2025-12-02
-**Session:** Insurance Claims Feature - Phase 1
+**Session:** Insurance Claims Feature - Phase 2 Complete
 
 ## Project State
-**Status:** Phase 1 Insurance Claims Infrastructure Complete
+**Status:** Phase 2 Photo Analysis & Delta Detection Complete
 **Environment:** Production deployed on Vercel
 
 ## What's Built
@@ -22,18 +22,31 @@
 - ✅ Generation options panel (temperature, detail level)
 - ✅ Activity logging per project
 
-### Insurance Claims Features (Phase 1 - NEW)
+### Insurance Claims Features (Phase 1)
 - ✅ Claim, CarrierScope, LineItem data models
 - ✅ Xactimate code reference library (50+ roofing codes)
 - ✅ AI-powered carrier scope parser (GPT-4o)
 - ✅ D$/SQ (Dollar Per Square) calculation
 - ✅ Missing item detection (drip edge, starter, I&W, etc.)
 - ✅ Claims API endpoints (CRUD + parse-scope)
-- ✅ ClaimSummaryCard component
-- ✅ LineItemsTable with grouping/search
-- ✅ ScopeUploader component
+- ✅ ClaimSummaryCard, LineItemsTable, ScopeUploader components
 - ✅ Claim workflow status tracking (11 stages)
 - ✅ ClaimActivity logging
+- ✅ Claim detail page `/claims/[id]`
+- ✅ Claims list page `/claims` with stats
+- ✅ Start Claim button on project page
+
+### Insurance Claims Features (Phase 2 - NEW)
+- ✅ PhotoAnalysis model for GPT-4 Vision results
+- ✅ DeltaItem model for supplement tracking
+- ✅ GPT-4 Vision photo analysis (component detection)
+- ✅ Delta generation engine (scope vs photos)
+- ✅ COMMONLY_MISSED_ITEMS with IRC codes
+- ✅ Defense note generator with IRC references
+- ✅ Photo analysis API endpoints
+- ✅ Delta generation API endpoints
+- ✅ DeltaList UI component (grouped, expandable)
+- ✅ Approve/Deny actions for deltas
 
 ### Infrastructure
 - ✅ Next.js 14 with App Router
@@ -46,44 +59,53 @@
 ## What's Not Built Yet
 - ❌ Authentication (Stack Auth planned, using TEMP_USER_ID)
 - ❌ Multi-tenant user isolation
-- ❌ Claim detail page (components built, needs page)
-- ❌ Delta analysis with photo evidence
-- ❌ Defense note generator with IRC codes
-- ❌ Supplement package builder
+- ❌ Photo uploader UI for claims
+- ❌ Delta tab in claim detail page
+- ❌ Phase 3: Defense note templates
+- ❌ Phase 4: Supplement package builder
+- ❌ Phase 5: Workflow tracking & analytics
+- ❌ Phase 6: Build day mobile checklist
 
 ## Recent Changes (This Session)
-1. Created feature roadmap for insurance claims platform
-2. Added Prisma models: Claim, CarrierScope, LineItem, ClaimActivity
-3. Built Xactimate code reference with 50+ roofing codes
-4. Created Zod schemas for scope parsing validation
-5. Built AI scope parser with GPT-4o
-6. Added D$/SQ calculation and missing item detection
-7. Created Claims API routes (CRUD + parse-scope)
-8. Built UI components: ClaimSummaryCard, LineItemsTable, ScopeUploader
+### Phase 1 Completion:
+1. Created claim detail page with server/client components
+2. Added claims list page with stats and table
+3. Added Start Claim button to project page
+4. MissingItemsAlert auto-detects common missing items
+
+### Phase 2 Implementation:
+5. Added PhotoAnalysis and DeltaItem Prisma models
+6. Created photo-analysis.ts library with GPT-4 Vision prompts
+7. Built analyze-photo API endpoint
+8. Built generate-deltas API endpoint
+9. Created DeltaList UI component
+10. Added 10 commonly missed items with IRC code references
 
 ## Files Created This Session
-- `prisma/schema.prisma` - Added Claim, CarrierScope, LineItem, ClaimActivity models
-- `lib/claims/xactimate-codes.ts` - Xactimate code reference library
-- `lib/claims/schemas.ts` - Zod validation schemas
-- `lib/claims/scope-parser.ts` - AI scope parsing module
-- `app/api/claims/route.ts` - Claims list/create API
-- `app/api/claims/[claimId]/route.ts` - Single claim CRUD API
-- `app/api/claims/[claimId]/parse-scope/route.ts` - Scope parsing API
-- `components/claims/ClaimSummaryCard.tsx` - Claim metrics display
-- `components/claims/LineItemsTable.tsx` - Line items with grouping
-- `components/claims/ScopeUploader.tsx` - Upload and parse flow
-- `components/claims/index.ts` - Component exports
+### Phase 1 UI:
+- `app/claims/page.tsx` - Claims list page
+- `app/claims/[id]/page.tsx` - Claim detail server component
+- `app/claims/[id]/ClaimDetailClient.tsx` - Client component
+- `components/claims/StartClaimButton.tsx` - Start claim from project
+
+### Phase 2:
+- `prisma/schema.prisma` - Added PhotoAnalysis, DeltaItem models
+- `lib/claims/photo-analysis.ts` - Vision analysis & delta engine
+- `app/api/claims/[claimId]/analyze-photo/route.ts` - Photo analysis API
+- `app/api/claims/[claimId]/generate-deltas/route.ts` - Delta generation API
+- `components/claims/DeltaList.tsx` - Delta display component
 
 ## Known Issues
-- None critical
+- Photo upload UI not yet integrated into claim detail page
+- Delta tab needs to be added to claim detail page
 
 ## Next Steps (Priority Order)
-1. Create claim detail page `/claims/[id]`
-2. Add claim creation flow from project page
-3. Phase 2: Photo analysis with GPT-4 Vision
-4. Phase 2: Delta list generator
-5. Phase 3: Defense note templates with IRC codes
-6. Phase 4: Supplement package builder
+1. Add Photo Upload UI to claim detail page
+2. Add Delta Analysis tab to claim detail page
+3. Phase 3: Defense note templates with formatting
+4. Phase 4: Supplement package builder (Xactimate export)
+5. Phase 5: Workflow tracking & D$/SQ analytics
+6. Phase 6: Build day mobile checklist
 
 ## Environment Variables Required
 See `.env.example` for full list.
