@@ -48,5 +48,6 @@ export async function GET(_: Request, { params }: any) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
   })
 
-  return new NextResponse(buf, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="estimate.pdf"' } })
+  const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+  return new NextResponse(ab, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="estimate.pdf"' } })
 }
