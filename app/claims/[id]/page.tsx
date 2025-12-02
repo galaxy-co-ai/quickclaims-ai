@@ -33,6 +33,12 @@ export default async function ClaimDetailPage({ params }: PageProps) {
         orderBy: { createdAt: 'desc' },
         take: 20,
       },
+      photoAnalyses: {
+        select: { id: true },
+      },
+      deltas: {
+        select: { id: true },
+      },
     },
   })
 
@@ -128,6 +134,8 @@ export default async function ClaimDetailPage({ params }: PageProps) {
             createdAt: a.createdAt.toISOString(),
           }))}
           scopeCount={claim.carrierScopes.length}
+          initialPhotoCount={claim.photoAnalyses.length}
+          initialDeltaCount={claim.deltas.length}
         />
       </main>
     </div>

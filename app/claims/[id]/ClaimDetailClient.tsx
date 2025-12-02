@@ -1,10 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ClaimSummaryCard, LineItemsTable, ScopeUploader } from '@/components/claims'
+import { ClaimSummaryCard, LineItemsTable, ScopeUploader, DeltaList } from '@/components/claims'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+
+interface PhotoAnalysis {
+  id: string
+  photoType: string
+  location: string | null
+  analysisStatus: string
+  uploadId: string
+  analyzedAt: string | null
+  detectedComponents: unknown[] | null
+  detectedDamage: unknown[] | null
+}
+
+interface DeltaItem {
+  id: string
+  deltaType: string
+  status: string
+  xactimateCode: string | null
+  description: string
+  category: string | null
+  ircCode: string | null
+  defenseNote: string | null
+  quantity: number | null
+  unit: string | null
+  estimatedRCV: number | null
+  evidenceNotes: string | null
+  photoAnalysis?: {
+    id: string
+    photoType: string
+    location: string | null
+  } | null
+}
 
 interface ClaimDetailClientProps {
   claim: {
@@ -58,6 +89,8 @@ interface ClaimDetailClientProps {
     createdAt: string
   }>
   scopeCount: number
+  initialPhotoCount: number
+  initialDeltaCount: number
 }
 
 export function ClaimDetailClient({
@@ -67,12 +100,107 @@ export function ClaimDetailClient({
   lineItems,
   activities,
   scopeCount,
+  initialPhotoCount,
+  initialDeltaCount,
 }: ClaimDetailClientProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'scope' | 'activity'>('scope')
+  const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'activity'>('scope')
+  const [photos, setPhotos] = useState<PhotoAnalysis[]>([])
+  const [deltas, setDeltas] = useState<DeltaItem[]>([])
+  const [photoCount, setPhotoCount] = useState(initialPhotoCount)
+  const [deltaCount, setDeltaCount] = useState(initialDeltaCount)
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false)
+  const [isLoadingDeltas, setIsLoadingDeltas] = useState(false)
+  const [isGeneratingDeltas, setIsGeneratingDeltas] = useState(false)
 
   const handleScopeParsed = () => {
-    // Refresh the page to show new data
+    router.refresh()
+  }
+
+  // Load photos when tab is selected
+  useEffect(() => {
+    if (activeTab === 'photos' && photos.length === 0 && photoCount > 0) {
+      loadPhotos()
+    }
+  }, [activeTab])
+
+  // Load deltas when tab is selected
+  useEffect(() => {
+    if (activeTab === 'deltas' && deltas.length === 0) {
+      loadDeltas()
+    }
+  }, [activeTab])
+
+  const loadPhotos = async () => {
+    setIsLoadingPhotos(true)
+    try {
+      const res = await fetch(`/api/claims/${claim.id}/analyze-photo`)
+      if (res.ok) {
+        const data = await res.json()
+        setPhotos(data.photoAnalyses || [])
+        setPhotoCount(data.photoAnalyses?.length || 0)
+      }
+    } catch (error) {
+      console.error('Failed to load photos:', error)
+    } finally {
+      setIsLoadingPhotos(false)
+    }
+  }
+
+  const loadDeltas = async () => {
+    setIsLoadingDeltas(true)
+    try {
+      const res = await fetch(`/api/claims/${claim.id}/generate-deltas`)
+      if (res.ok) {
+        const data = await res.json()
+        setDeltas(data.deltas || [])
+        setDeltaCount(data.deltas?.length || 0)
+      }
+    } catch (error) {
+      console.error('Failed to load deltas:', error)
+    } finally {
+      setIsLoadingDeltas(false)
+    }
+  }
+
+  const generateDeltas = async () => {
+    setIsGeneratingDeltas(true)
+    try {
+      const res = await fetch(`/api/claims/${claim.id}/generate-deltas`, {
+        method: 'POST',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setDeltas(data.deltas || [])
+        setDeltaCount(data.deltas?.length || 0)
+        router.refresh()
+      }
+    } catch (error) {
+      console.error('Failed to generate deltas:', error)
+    } finally {
+      setIsGeneratingDeltas(false)
+    }
+  }
+
+  const handleDeltaStatusChange = async (deltaId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/claims/${claim.id}/deltas/${deltaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) {
+        setDeltas(prev => prev.map(d => 
+          d.id === deltaId ? { ...d, status: newStatus } : d
+        ))
+      }
+    } catch (error) {
+      console.error('Failed to update delta status:', error)
+    }
+  }
+
+  const handlePhotoUploaded = () => {
+    loadPhotos()
     router.refresh()
   }
 
@@ -86,10 +214,10 @@ export function ClaimDetailClient({
       />
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border">
+      <div className="flex gap-2 border-b border-border overflow-x-auto">
         <button
           onClick={() => setActiveTab('scope')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'scope'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -98,8 +226,28 @@ export function ClaimDetailClient({
           Carrier Scope {scopeCount > 0 && `(v${scopeCount})`}
         </button>
         <button
+          onClick={() => setActiveTab('photos')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'photos'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Photos {photoCount > 0 && `(${photoCount})`}
+        </button>
+        <button
+          onClick={() => setActiveTab('deltas')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'deltas'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Delta Analysis {deltaCount > 0 && `(${deltaCount})`}
+        </button>
+        <button
           onClick={() => setActiveTab('activity')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'activity'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -161,6 +309,89 @@ export function ClaimDetailClient({
         </div>
       )}
 
+      {/* Photos Tab */}
+      {activeTab === 'photos' && (
+        <div className="space-y-6">
+          {/* Photo Upload */}
+          <PhotoUploader
+            claimId={claim.id}
+            projectId={project.id}
+            onPhotoUploaded={handlePhotoUploaded}
+          />
+
+          {/* Photo List */}
+          {isLoadingPhotos ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+          ) : photos.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No photos uploaded yet</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Upload photos to enable AI analysis and delta detection
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {photos.map((photo) => (
+                <PhotoCard key={photo.id} photo={photo} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Deltas Tab */}
+      {activeTab === 'deltas' && (
+        <div className="space-y-6">
+          {/* Generate Button */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium">Delta Analysis</h3>
+              <p className="text-sm text-muted-foreground">
+                Compare carrier scope against photo evidence and code requirements
+              </p>
+            </div>
+            <Button
+              onClick={generateDeltas}
+              loading={isGeneratingDeltas}
+              disabled={!summary}
+            >
+              {deltas.length > 0 ? 'Re-run Analysis' : 'Run Analysis'}
+            </Button>
+          </div>
+
+          {!summary ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">Upload a carrier scope first</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Delta analysis compares the carrier scope against requirements
+                </p>
+              </CardContent>
+            </Card>
+          ) : isLoadingDeltas ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+          ) : (
+            <DeltaList
+              deltas={deltas}
+              onStatusChange={handleDeltaStatusChange}
+              showActions={true}
+            />
+          )}
+        </div>
+      )}
+
       {activeTab === 'activity' && (
         <Card>
           <CardHeader>
@@ -191,6 +422,233 @@ export function ClaimDetailClient({
         </Card>
       )}
     </div>
+  )
+}
+
+// Photo uploader component
+function PhotoUploader({
+  claimId,
+  projectId,
+  onPhotoUploaded,
+}: {
+  claimId: string
+  projectId: string
+  onPhotoUploaded: () => void
+}) {
+  const [isUploading, setIsUploading] = useState(false)
+  const [selectedType, setSelectedType] = useState<string>('rooftop')
+  const [location, setLocation] = useState('')
+
+  const PHOTO_TYPES = [
+    { value: 'ground', label: 'Ground Level' },
+    { value: 'edge', label: 'Edge/Drip' },
+    { value: 'rooftop', label: 'Rooftop' },
+    { value: 'component', label: 'Component' },
+    { value: 'damage', label: 'Damage' },
+    { value: 'attic', label: 'Attic' },
+  ]
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setIsUploading(true)
+
+    try {
+      for (const file of Array.from(files)) {
+        // Upload file
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('projectId', projectId)
+        formData.append('fileType', 'photo')
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!uploadResponse.ok) throw new Error('Upload failed')
+
+        const { upload } = await uploadResponse.json()
+
+        // Analyze photo
+        await fetch(`/api/claims/${claimId}/analyze-photo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uploadId: upload.id,
+            photoType: selectedType,
+            location: location || undefined,
+          }),
+        })
+      }
+
+      onPhotoUploaded()
+    } catch (error) {
+      console.error('Error uploading photos:', error)
+    } finally {
+      setIsUploading(false)
+      e.target.value = '' // Reset input
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-2">Photo Type</label>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-border bg-background"
+            >
+              {PHOTO_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-2">Location (optional)</label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g., Front elevation, North side"
+              className="w-full h-10 px-3 rounded-lg border border-border bg-background"
+            />
+          </div>
+          <div className="flex items-end">
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+                disabled={isUploading}
+              />
+              <span className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-all cursor-pointer">
+                {isUploading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Analyzing...
+                  </>
+                ) : (
+                  'Upload Photos'
+                )}
+              </span>
+            </label>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Photo card component
+function PhotoCard({ photo }: { photo: PhotoAnalysis }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const components = (photo.detectedComponents as Array<{ component: string; present: boolean; condition?: string }>) || []
+  const damage = (photo.detectedDamage as Array<{ damageType: string; severity: string; description: string }>) || []
+
+  const statusColors: Record<string, string> = {
+    pending: 'bg-yellow-100 text-yellow-700',
+    analyzing: 'bg-blue-100 text-blue-700',
+    completed: 'bg-green-100 text-green-700',
+    failed: 'bg-red-100 text-red-700',
+  }
+
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="font-medium capitalize">{photo.photoType} Photo</p>
+            {photo.location && (
+              <p className="text-sm text-muted-foreground">{photo.location}</p>
+            )}
+          </div>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[photo.analysisStatus] || 'bg-gray-100'}`}>
+            {photo.analysisStatus}
+          </span>
+        </div>
+
+        {photo.analysisStatus === 'completed' && (
+          <>
+            <div className="flex gap-4 text-sm mb-3">
+              <div>
+                <span className="text-muted-foreground">Components:</span>{' '}
+                <span className="font-medium">{components.filter(c => c.present).length}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Damage:</span>{' '}
+                <span className="font-medium">{damage.length}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-sm text-primary hover:underline"
+            >
+              {isExpanded ? 'Hide details' : 'Show details'}
+            </button>
+
+            {isExpanded && (
+              <div className="mt-3 pt-3 border-t border-border space-y-3">
+                {components.filter(c => c.present).length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      Detected Components
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {components.filter(c => c.present).map((c, i) => (
+                        <span
+                          key={i}
+                          className="text-xs bg-muted px-2 py-0.5 rounded"
+                        >
+                          {c.component}
+                          {c.condition && c.condition !== 'good' && (
+                            <span className="text-amber-600 ml-1">({c.condition})</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {damage.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      Damage Detected
+                    </p>
+                    <div className="space-y-1">
+                      {damage.map((d, i) => (
+                        <div key={i} className="text-sm">
+                          <span className="font-medium capitalize">{d.damageType}</span>
+                          <span className={`text-xs ml-2 ${
+                            d.severity === 'severe' ? 'text-red-600' :
+                            d.severity === 'moderate' ? 'text-orange-600' : 'text-yellow-600'
+                          }`}>
+                            ({d.severity})
+                          </span>
+                          <p className="text-xs text-muted-foreground">{d.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
