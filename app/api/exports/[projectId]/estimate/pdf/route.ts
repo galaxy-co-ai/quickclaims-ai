@@ -9,7 +9,7 @@ export async function GET(_: Request, { params }: any) {
 
   const doc = new PDFDocument({ size: 'LETTER', margin: 36 })
   const chunks: Buffer[] = []
-  doc.on('data', (c) => chunks.push(c))
+  doc.on('data', (c: any) => chunks.push(c as Buffer))
 
   doc.fontSize(18).text('Estimate', { align: 'left' })
   doc.moveDown(0.5)
