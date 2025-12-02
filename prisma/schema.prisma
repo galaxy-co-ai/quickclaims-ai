@@ -36,6 +36,7 @@ model Project {
   // Relations
   documents   Document[]
   uploads     Upload[]
+  claim       Claim?
   
   @@index([userId])
 }
@@ -70,4 +71,145 @@ model Document {
   
   @@index([projectId])
   @@index([type])
+}
+
+// ============================================
+// Insurance Claim Models
+// ============================================
+
+model Claim {
+  id              String    @id @default(cuid())
+  projectId       String    @unique
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Claim identification
+  claimNumber     String?
+  dateOfLoss      DateTime?
+  
+  // Insurance carrier info
+  carrier         String?
+  adjusterName    String?
+  adjusterEmail   String?
+  adjusterPhone   String?
+  
+  // Policy details
+  policyType      String?   // RCV, ACV, RPS
+  deductible      Float?
+  
+  // Claim workflow status
+  status          String    @default("intake")
+  // Statuses: intake, scope_review, delta_analysis, supplement_pending, 
+  //           awaiting_sol, rebuttal, build_scheduled, post_build, 
+  //           invoicing, depreciation_pending, completed
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  carrierScopes   CarrierScope[]
+  activities      ClaimActivity[]
+  
+  @@index([status])
+}
+
+model CarrierScope {
+  id              String    @id @default(cuid())
+  claimId         String
+  claim           Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  
+  // Version tracking (SOL #1, #2, etc.)
+  version         Int       @default(1)
+  uploadId        String?   // Reference to uploaded PDF
+  
+  // Summary totals
+  totalRCV        Float     @default(0)
+  totalACV        Float     @default(0)
+  totalDepreciation Float   @default(0)
+  totalTax        Float     @default(0)
+  totalOP         Float     @default(0)  // Overhead & Profit
+  deductible      Float     @default(0)
+  netPayment      Float     @default(0)  // ACV - deductible
+  
+  // Roof-specific metrics
+  totalSquares    Float?    // Total roofing squares
+  dollarPerSquare Float?    // RCV / squares - key KPI
+  
+  // Coverage breakdown
+  dwellingRCV     Float?    // Coverage A
+  otherStructuresRCV Float? // Coverage B
+  
+  // Raw extracted text (for reference)
+  rawText         String?   @db.Text
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  
+  // Relations
+  lineItems       LineItem[]
+  
+  @@index([claimId])
+  @@unique([claimId, version])
+}
+
+model LineItem {
+  id              String    @id @default(cuid())
+  scopeId         String
+  scope           CarrierScope @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  
+  // Line item identification
+  lineNumber      Int?      // Original line number from scope
+  xactimateCode   String?   // RFGDRIP, RFG300, RFGSTEP, etc.
+  description     String
+  
+  // Categorization
+  category        String    // roofing, painting, drywall, carpet, etc.
+  trade           String?   // More specific trade designation
+  area            String?   // Main Roof, Front Elevation, Garage, etc.
+  
+  // Quantities and pricing
+  quantity        Float
+  unit            String    // SQ, LF, EA, SF, HR
+  unitPrice       Float     @default(0)
+  
+  // Cost breakdown
+  tax             Float     @default(0)
+  overheadProfit  Float     @default(0)  // O&P amount
+  rcv             Float     @default(0)  // Replacement Cost Value
+  
+  // Depreciation
+  ageLife         String?   // e.g., "5/20" (5 years old, 20 year life)
+  depreciationPct Float?    // Depreciation percentage
+  depreciation    Float     @default(0)  // Depreciation amount
+  acv             Float     @default(0)  // Actual Cash Value (RCV - depreciation)
+  
+  // Supplement tracking
+  isSupplemented  Boolean   @default(false)
+  supplementNotes String?   @db.Text
+  
+  // Delta tracking (for comparison)
+  deltaType       String?   // missing, incorrect_qty, wrong_code, approved
+  deltaNote       String?
+  
+  createdAt       DateTime  @default(now())
+  
+  @@index([scopeId])
+  @@index([category])
+  @@index([xactimateCode])
+}
+
+model ClaimActivity {
+  id          String   @id @default(cuid())
+  claimId     String
+  claim       Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  
+  action      String   // status_change, scope_uploaded, scope_parsed, supplement_sent, 
+                       // sol_received, note_added, email_sent, payment_received
+  description String?
+  details     Json?    // Flexible metadata
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([claimId])
+  @@index([action])
 }

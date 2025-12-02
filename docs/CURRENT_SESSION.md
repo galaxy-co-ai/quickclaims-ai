@@ -1,14 +1,14 @@
 # QuickClaims.ai - Current Session Status
 
 **Last Updated:** 2025-12-02
-**Session:** Initial Build Phase
+**Session:** Insurance Claims Feature - Phase 1
 
 ## Project State
-**Status:** MVP Core Features Complete
+**Status:** Phase 1 Insurance Claims Infrastructure Complete
 **Environment:** Production deployed on Vercel
 
 ## What's Built
-### Core Features
+### Core Features (MVP)
 - ✅ Landing page with product overview
 - ✅ Dashboard with AI concierge wizard for project creation
 - ✅ Project detail page with uploads and document generation
@@ -22,6 +22,19 @@
 - ✅ Generation options panel (temperature, detail level)
 - ✅ Activity logging per project
 
+### Insurance Claims Features (Phase 1 - NEW)
+- ✅ Claim, CarrierScope, LineItem data models
+- ✅ Xactimate code reference library (50+ roofing codes)
+- ✅ AI-powered carrier scope parser (GPT-4o)
+- ✅ D$/SQ (Dollar Per Square) calculation
+- ✅ Missing item detection (drip edge, starter, I&W, etc.)
+- ✅ Claims API endpoints (CRUD + parse-scope)
+- ✅ ClaimSummaryCard component
+- ✅ LineItemsTable with grouping/search
+- ✅ ScopeUploader component
+- ✅ Claim workflow status tracking (11 stages)
+- ✅ ClaimActivity logging
+
 ### Infrastructure
 - ✅ Next.js 14 with App Router
 - ✅ Prisma ORM with Neon PostgreSQL
@@ -33,36 +46,44 @@
 ## What's Not Built Yet
 - ❌ Authentication (Stack Auth planned, using TEMP_USER_ID)
 - ❌ Multi-tenant user isolation
-- ❌ Project sharing/collaboration
-- ❌ Email notifications
-- ❌ Billing/subscription system
+- ❌ Claim detail page (components built, needs page)
+- ❌ Delta analysis with photo evidence
+- ❌ Defense note generator with IRC codes
+- ❌ Supplement package builder
 
 ## Recent Changes (This Session)
-1. Added Materials PDF export
-2. Added role-based labor breakdown to estimates
-3. Added USD formatting across all monetary values
-4. Added generation options (temperature, detail level)
-5. Added Redis activity logging
-6. Reorganized project structure
+1. Created feature roadmap for insurance claims platform
+2. Added Prisma models: Claim, CarrierScope, LineItem, ClaimActivity
+3. Built Xactimate code reference with 50+ roofing codes
+4. Created Zod schemas for scope parsing validation
+5. Built AI scope parser with GPT-4o
+6. Added D$/SQ calculation and missing item detection
+7. Created Claims API routes (CRUD + parse-scope)
+8. Built UI components: ClaimSummaryCard, LineItemsTable, ScopeUploader
 
-## Files Modified This Session
-- `lib/ai/openai.ts` - Added GenerateOptions, laborBreakdown schema
-- `lib/activity.ts` - New activity logging module
-- `components/project/GenerateButton.tsx` - Options panel
-- `components/project/DocumentViews.tsx` - Enhanced estimate display
-- `components/project/ActivityLog.tsx` - New component
-- `app/api/exports/[projectId]/materials/pdf/route.ts` - New export
-- `app/api/projects/[id]/activity/route.ts` - New endpoint
+## Files Created This Session
+- `prisma/schema.prisma` - Added Claim, CarrierScope, LineItem, ClaimActivity models
+- `lib/claims/xactimate-codes.ts` - Xactimate code reference library
+- `lib/claims/schemas.ts` - Zod validation schemas
+- `lib/claims/scope-parser.ts` - AI scope parsing module
+- `app/api/claims/route.ts` - Claims list/create API
+- `app/api/claims/[claimId]/route.ts` - Single claim CRUD API
+- `app/api/claims/[claimId]/parse-scope/route.ts` - Scope parsing API
+- `components/claims/ClaimSummaryCard.tsx` - Claim metrics display
+- `components/claims/LineItemsTable.tsx` - Line items with grouping
+- `components/claims/ScopeUploader.tsx` - Upload and parse flow
+- `components/claims/index.ts` - Component exports
 
 ## Known Issues
 - None critical
 
 ## Next Steps (Priority Order)
-1. Add authentication with Stack Auth
-2. Implement proper user isolation (tenant_id)
-3. Add project list filtering/search
-4. Add photo analysis with GPT-4 Vision
-5. Consider Gamma integration for polished exports
+1. Create claim detail page `/claims/[id]`
+2. Add claim creation flow from project page
+3. Phase 2: Photo analysis with GPT-4 Vision
+4. Phase 2: Delta list generator
+5. Phase 3: Defense note templates with IRC codes
+6. Phase 4: Supplement package builder
 
 ## Environment Variables Required
 See `.env.example` for full list.
