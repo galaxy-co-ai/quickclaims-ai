@@ -109,6 +109,8 @@ model Claim {
   // Relations
   carrierScopes   CarrierScope[]
   activities      ClaimActivity[]
+  photoAnalyses   PhotoAnalysis[]
+  deltas          DeltaItem[]
   
   @@index([status])
 }
@@ -212,4 +214,82 @@ model ClaimActivity {
   
   @@index([claimId])
   @@index([action])
+}
+
+// ============================================
+// Photo Analysis & Delta Detection (Phase 2)
+// ============================================
+
+model PhotoAnalysis {
+  id              String    @id @default(cuid())
+  claimId         String
+  claim           Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  uploadId        String    // Reference to uploaded photo
+  
+  // Photo metadata
+  photoType       String    // ground, edge, rooftop, component, attic, interior
+  location        String?   // Front elevation, Rear, Left side, etc.
+  
+  // AI analysis results
+  analyzedAt      DateTime?
+  analysisStatus  String    @default("pending") // pending, analyzing, completed, failed
+  
+  // Detected components (JSON array)
+  detectedComponents Json?  // [{component, confidence, boundingBox, notes}]
+  
+  // Detected damage (JSON array)
+  detectedDamage  Json?     // [{damageType, severity, location, description}]
+  
+  // Measurements extracted from photo
+  measurements    Json?     // [{item, value, unit, confidence}]
+  
+  // Raw AI response for debugging
+  rawAnalysis     Json?
+  
+  createdAt       DateTime  @default(now())
+  
+  // Relations
+  deltas          DeltaItem[]
+  
+  @@index([claimId])
+  @@index([photoType])
+}
+
+model DeltaItem {
+  id              String    @id @default(cuid())
+  claimId         String
+  claim           Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  
+  // Delta identification
+  deltaType       String    // missing, underscoped, incorrect_code, incorrect_qty, recommend_add
+  status          String    @default("identified") // identified, approved, denied, included
+  
+  // What was found/missing
+  xactimateCode   String?   // Recommended Xactimate code
+  description     String    // What the delta is
+  category        String?   // roofing, gutters, etc.
+  
+  // IRC/Code reference for defense
+  ircCode         String?   // R905.2.8.5, etc.
+  defenseNote     String?   @db.Text  // Full defense justification
+  
+  // Quantity info (if applicable)
+  quantity        Float?
+  unit            String?
+  estimatedRCV    Float?    // Estimated cost impact
+  
+  // Photo evidence
+  photoAnalysisId String?
+  photoAnalysis   PhotoAnalysis? @relation(fields: [photoAnalysisId], references: [id])
+  evidenceNotes   String?   @db.Text  // Notes about photo evidence
+  
+  // Line item match (if comparing to existing scope)
+  carrierLineItemId String? // If this relates to an existing line item
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([claimId])
+  @@index([deltaType])
+  @@index([status])
 }
