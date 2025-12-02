@@ -35,13 +35,19 @@ export async function POST(request: NextRequest) {
     // Find scope document if uploaded
     const scopeUpload = project.uploads.find(u => u.fileType === 'scope')
     let scopeContent = ''
-    
+
     if (scopeUpload) {
-      // TODO: Extract text from PDF/document
-      scopeContent = 'Scope content would be extracted here'
+      try {
+        const { extractScopeText } = await import('@/lib/extract/scope')
+        const text = await extractScopeText(scopeUpload.fileUrl, scopeUpload.mimeType)
+        // Trim to keep prompt size manageable
+        scopeContent = text.slice(0, 20000)
+      } catch (e) {
+        console.error('Scope extraction failed:', e)
+      }
     }
-    
-    // Generate documents using AI
+
+    // Generate documents using AI with extracted scope text when available
     const generatedDocs = await generateProjectDocuments(
       {
         address: project.address,

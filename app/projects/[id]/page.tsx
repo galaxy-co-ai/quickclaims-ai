@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { UploadBox } from '@/components/project/UploadBox'
 import { GenerateButton } from '@/components/project/GenerateButton'
 import Link from 'next/link'
+import { RoadmapView, MaterialsView, EstimateView } from '@/components/project/DocumentViews'
 
 export default async function ProjectDetail({ params }: { params: { id: string } }) {
   const project = await db.project.findUnique({
@@ -71,9 +72,14 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                 <p className="text-muted-foreground text-sm">No documents yet. Upload a scope and click Generate.</p>
               )}
               {project.documents.map(d => (
-                <div key={d.id} className="border border-border rounded-xl p-4">
+                <div key={d.id} className="border border-border rounded-xl p-4 space-y-2">
                   <h4 className="font-semibold mb-1 capitalize">{d.type}</h4>
-                  <pre className="text-xs overflow-auto whitespace-pre-wrap">{JSON.stringify(d.content, null, 2)}</pre>
+                  {d.type === 'roadmap' && <RoadmapView data={d.content as any} />}
+                  {d.type === 'materials' && <MaterialsView data={d.content as any} />}
+                  {d.type === 'estimate' && <EstimateView data={d.content as any} />}
+                  {d.type === 'brief' && (
+                    <pre className="text-sm overflow-auto whitespace-pre-wrap">{JSON.stringify(d.content, null, 2)}</pre>
+                  )}
                 </div>
               ))}
             </div>

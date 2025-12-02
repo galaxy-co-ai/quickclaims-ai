@@ -13,25 +13,45 @@ export async function generateProjectDocuments(
   scopeContent?: string,
   photos?: string[]
 ) {
-  const systemPrompt = `You are an expert construction project manager and estimator. Generate detailed, professional project documents for construction contractors.`
+  const systemPrompt = `You are an expert construction project manager and estimator. You always return strictly valid JSON following the exact schema requested, with no additional commentary.`
 
   const userPrompt = `
-Generate comprehensive project documents for the following construction project:
+Using the details below, produce four project documents. If scope text is provided, ground your outputs in it and avoid inventing specifics not supported by the scope.
 
-**Project Details:**
-- Client: ${projectData.clientName}
-- Location: ${projectData.address}
-- Type: ${projectData.projectType}
-${scopeContent ? `\n**Insurance Scope:**\n${scopeContent}` : ''}
+Project Details:
+- client: ${projectData.clientName}
+- address: ${projectData.address}
+- type: ${projectData.projectType}
+${scopeContent ? `- scope_text: """\n${scopeContent}\n"""` : ''}
 
-Please generate the following documents in JSON format:
-
-1. **Project Roadmap**: A detailed timeline with phases, tasks, and estimated durations
-2. **Material List**: Complete list of materials needed with quantities and specifications
-3. **Cost Estimate**: Line-item breakdown including labor, materials, permits, and overhead
-4. **Project Brief**: Comprehensive project overview serving as the source of truth
-
-Return the response as a JSON object with keys: roadmap, materials, estimate, brief
+Return a single JSON object with these keys and shapes:
+{
+  "roadmap": {
+    "phases": [
+      { "name": string, "durationDays": number, "tasks": [string] }
+    ],
+    "assumptions": [string]
+  },
+  "materials": {
+    "items": [
+      { "name": string, "quantity": number, "unit": string, "specs"?: string }
+    ]
+  },
+  "estimate": {
+    "currency": "USD",
+    "items": [
+      { "category": string, "description": string, "quantity": number, "unitCost": number, "laborHours"?: number, "permitFees"?: number, "total": number }
+    ],
+    "subtotal": number,
+    "tax"?: number,
+    "grandTotal": number
+  },
+  "brief": {
+    "overview": string,
+    "objectives": [string],
+    "risks": [string]
+  }
+}
 `
 
   const completion = await openai.chat.completions.create({
