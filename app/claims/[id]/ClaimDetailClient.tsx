@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ClaimSummaryCard, LineItemsTable, ScopeUploader, DeltaList } from '@/components/claims'
+import { ClaimSummaryCard, LineItemsTable, ScopeUploader, DeltaList, DefenseNotes } from '@/components/claims'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 
@@ -104,13 +104,26 @@ export function ClaimDetailClient({
   initialDeltaCount,
 }: ClaimDetailClientProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'activity'>('scope')
+  const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defense' | 'activity'>('scope')
   const [photos, setPhotos] = useState<PhotoAnalysis[]>([])
   const [deltas, setDeltas] = useState<DeltaItem[]>([])
+  const [defenseNotes, setDefenseNotes] = useState<Array<{
+    deltaId: string
+    xactimateCode: string | null
+    description: string
+    ircCode: string | null
+    status: string
+    defenseNote: string
+    quantity: number | null
+    unit: string | null
+    estimatedRCV: number | null
+  }>>([])
   const [photoCount, setPhotoCount] = useState(initialPhotoCount)
   const [deltaCount, setDeltaCount] = useState(initialDeltaCount)
+  const [approvedCount, setApprovedCount] = useState(0)
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(false)
   const [isLoadingDeltas, setIsLoadingDeltas] = useState(false)
+  const [isLoadingDefense, setIsLoadingDefense] = useState(false)
   const [isGeneratingDeltas, setIsGeneratingDeltas] = useState(false)
 
   const handleScopeParsed = () => {
@@ -128,6 +141,13 @@ export function ClaimDetailClient({
   useEffect(() => {
     if (activeTab === 'deltas' && deltas.length === 0) {
       loadDeltas()
+    }
+  }, [activeTab])
+
+  // Load defense notes when tab is selected
+  useEffect(() => {
+    if (activeTab === 'defense' && defenseNotes.length === 0) {
+      loadDefenseNotes()
     }
   }, [activeTab])
 
@@ -155,11 +175,28 @@ export function ClaimDetailClient({
         const data = await res.json()
         setDeltas(data.deltas || [])
         setDeltaCount(data.deltas?.length || 0)
+        setApprovedCount((data.deltas || []).filter((d: DeltaItem) => d.status === 'approved' || d.status === 'included').length)
       }
     } catch (error) {
       console.error('Failed to load deltas:', error)
     } finally {
       setIsLoadingDeltas(false)
+    }
+  }
+
+  const loadDefenseNotes = async () => {
+    setIsLoadingDefense(true)
+    try {
+      const res = await fetch(`/api/claims/${claim.id}/defense-notes`)
+      if (res.ok) {
+        const data = await res.json()
+        setDefenseNotes(data.defenseNotes || [])
+        setApprovedCount(data.approvedCount || 0)
+      }
+    } catch (error) {
+      console.error('Failed to load defense notes:', error)
+    } finally {
+      setIsLoadingDefense(false)
     }
   }
 
@@ -193,6 +230,11 @@ export function ClaimDetailClient({
         setDeltas(prev => prev.map(d => 
           d.id === deltaId ? { ...d, status: newStatus } : d
         ))
+        // Update approved count
+        const newApproved = deltas.filter(d => 
+          d.id === deltaId ? (newStatus === 'approved' || newStatus === 'included') : (d.status === 'approved' || d.status === 'included')
+        ).length
+        setApprovedCount(newApproved)
       }
     } catch (error) {
       console.error('Failed to update delta status:', error)
@@ -244,6 +286,16 @@ export function ClaimDetailClient({
           }`}
         >
           Delta Analysis {deltaCount > 0 && `(${deltaCount})`}
+        </button>
+        <button
+          onClick={() => setActiveTab('defense')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'defense'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Defense Notes {approvedCount > 0 && `(${approvedCount})`}
         </button>
         <button
           onClick={() => setActiveTab('activity')}
@@ -387,6 +439,26 @@ export function ClaimDetailClient({
               deltas={deltas}
               onStatusChange={handleDeltaStatusChange}
               showActions={true}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Defense Notes Tab */}
+      {activeTab === 'defense' && (
+        <div className="space-y-6">
+          {isLoadingDefense ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+          ) : (
+            <DefenseNotes
+              claimId={claim.id}
+              notes={defenseNotes}
+              onRefresh={loadDefenseNotes}
             />
           )}
         </div>
