@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ClaimSummaryCard, LineItemsTable, ScopeUploader, DeltaList, DefenseNotes } from '@/components/claims'
+import { ClaimSummaryCard, LineItemsTable, ScopeUploader, DeltaList, DefenseNotes, SupplementBuilder } from '@/components/claims'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 
@@ -104,7 +104,7 @@ export function ClaimDetailClient({
   initialDeltaCount,
 }: ClaimDetailClientProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defense' | 'activity'>('scope')
+const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defense' | 'supplement' | 'activity'>('scope')
   const [photos, setPhotos] = useState<PhotoAnalysis[]>([])
   const [deltas, setDeltas] = useState<DeltaItem[]>([])
   const [defenseNotes, setDefenseNotes] = useState<Array<{
@@ -298,6 +298,16 @@ export function ClaimDetailClient({
           Defense Notes {approvedCount > 0 && `(${approvedCount})`}
         </button>
         <button
+          onClick={() => setActiveTab('supplement')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'supplement'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Supplement
+        </button>
+        <button
           onClick={() => setActiveTab('activity')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'activity'
@@ -461,6 +471,16 @@ export function ClaimDetailClient({
               onRefresh={loadDefenseNotes}
             />
           )}
+        </div>
+      )}
+
+      {/* Supplement Tab */}
+      {activeTab === 'supplement' && (
+        <div className="space-y-6">
+          <SupplementBuilder
+            claimId={claim.id}
+            onSupplementSent={() => router.refresh()}
+          />
         </div>
       )}
 
