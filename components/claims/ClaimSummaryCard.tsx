@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { CLAIM_STATUS_INFO, type ClaimStatus } from '@/lib/claims/schemas'
 
@@ -143,6 +144,19 @@ export function ClaimSummaryCard({ claim, summary, project }: ClaimSummaryCardPr
             </p>
           </div>
         )}
+
+        {/* Quick Actions */}
+        <div className="flex gap-2 mb-6">
+          <Link
+            href={`/claims/${claim.id}/checklist`}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Build Day Checklist
+          </Link>
+        </div>
 
         {/* Claim Details */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
