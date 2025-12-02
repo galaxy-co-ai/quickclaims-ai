@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { del } from '@vercel/blob'
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: any) {
   try {
     const { fileName } = await request.json()
     if (!fileName) return NextResponse.json({ error: 'fileName required' }, { status: 400 })
@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const upload = await db.upload.findUnique({ where: { id: params.id } })
     if (!upload) return NextResponse.json({ error: 'Not found' }, { status: 404 })
