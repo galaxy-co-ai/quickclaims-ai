@@ -36,6 +36,11 @@ interface Upload {
   mimeType: string;
   fileSize: number;
   createdAt: string;
+  // AI analysis data
+  tags: string[];
+  category: string | null;
+  description: string | null;
+  aiAnalyzedAt: string | null;
 }
 
 interface Document {
@@ -782,8 +787,19 @@ function PhotoGallery({ projectId, photos, onPhotoDeleted }: PhotoGalleryProps) 
   const [selectedPhoto, setSelectedPhoto] = useState<Upload | null>(null);
   const [categoryOpen, setCategoryOpen] = useState(false);
 
-  // Simulate AI auto-tagging (in production, this would call an API)
+  // Get photo tags - use AI tags if available, otherwise infer from filename
   const getPhotoTags = (photo: Upload): string[] => {
+    // If AI tags are available, use them
+    if (photo.tags && photo.tags.length > 0) {
+      return photo.tags;
+    }
+    
+    // If AI category is set, include it
+    if (photo.category) {
+      return [photo.category];
+    }
+    
+    // Fallback: infer from filename
     const fileName = photo.fileName.toLowerCase();
     const tags: string[] = [];
     
@@ -796,6 +812,11 @@ function PhotoGallery({ projectId, photos, onPhotoDeleted }: PhotoGalleryProps) 
     if (fileName.includes("material")) tags.push("materials");
     
     return tags.length > 0 ? tags : ["uncategorized"];
+  };
+  
+  // Check if a photo has been AI analyzed
+  const isAIAnalyzed = (photo: Upload): boolean => {
+    return !!photo.aiAnalyzedAt;
   };
 
   // Filter photos based on search and category
@@ -813,11 +834,44 @@ function PhotoGallery({ projectId, photos, onPhotoDeleted }: PhotoGalleryProps) 
   };
 
   const handleAIOrganize = async () => {
+    if (photos.length === 0) {
+      toast.error("No photos to organize");
+      return;
+    }
+
     setIsOrganizing(true);
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsOrganizing(false);
-    toast.success("Photos organized! AI has auto-tagged your photos based on content.");
+    try {
+      // Get all photo upload IDs
+      const photoIds = photos.map(p => p.id);
+      
+      // Call the batch analysis API
+      const response = await fetch("/api/photos/analyze", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uploadIds: photoIds,
+          projectId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to analyze photos");
+      }
+
+      const data = await response.json();
+      
+      if (data.analyzed > 0) {
+        toast.success(`Analyzed ${data.analyzed} photos! Tags have been updated.`);
+        // Refresh to show new tags - in production, we'd update state directly
+        window.location.reload();
+      } else {
+        toast.error("Could not analyze any photos. Please try again.");
+      }
+    } catch (error) {
+      toast.error("Failed to organize photos. Please try again.");
+    } finally {
+      setIsOrganizing(false);
+    }
   };
 
   const handleDeletePhoto = async (photoId: string) => {
@@ -978,6 +1032,12 @@ function PhotoGallery({ projectId, photos, onPhotoDeleted }: PhotoGalleryProps) 
               <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <p className="text-white text-xs font-medium truncate">{photo.fileName}</p>
                 <div className="flex flex-wrap gap-1 mt-1">
+                  {isAIAnalyzed(photo) && (
+                    <span className="px-1.5 py-0.5 text-[9px] rounded-full bg-primary/50 text-white flex items-center gap-0.5">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      AI
+                    </span>
+                  )}
                   {getPhotoTags(photo).slice(0, 2).map(tag => (
                     <span key={tag} className="px-1.5 py-0.5 text-[9px] rounded-full bg-white/20 text-white capitalize">
                       {tag}
@@ -1011,6 +1071,12 @@ function PhotoGallery({ projectId, photos, onPhotoDeleted }: PhotoGalleryProps) 
                     {formatDate(photo.createdAt)}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-1">
+                    {isAIAnalyzed(photo) && (
+                      <span className="px-1.5 py-0.5 text-[9px] rounded-full bg-primary/10 text-primary flex items-center gap-0.5">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        AI
+                      </span>
+                    )}
                     {getPhotoTags(photo).slice(0, 3).map(tag => (
                       <span key={tag} className="px-1.5 py-0.5 text-[9px] rounded-full bg-muted text-muted-foreground capitalize">
                         {tag}

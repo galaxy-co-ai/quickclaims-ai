@@ -22,11 +22,12 @@ import {
   CloudUpload,
   CheckCircle2,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { AppShell } from "@/components/layout";
 import { Card, Input, toast } from "@/components/ui";
 
-// Document categories with AI-detected types
+// Document categories with icons
 const DOCUMENT_CATEGORIES = [
   { id: "all", label: "All", icon: FolderOpen, color: "bg-slate-100 text-slate-600" },
   { id: "scope", label: "Scopes", icon: FileText, color: "bg-blue-100 text-blue-600" },
@@ -49,72 +50,10 @@ interface DocumentItem {
   createdAt: string;
   aiTags: string[];
   aiConfidence: number;
-  url?: string;
+  url: string | null;
+  isGenerated: boolean;
+  docType: string;
 }
-
-// Mock data - in production this would come from the API
-const MOCK_DOCUMENTS: DocumentItem[] = [
-  {
-    id: "1",
-    name: "Carrier_Scope_StateFarm_2024.pdf",
-    type: "application/pdf",
-    category: "scope",
-    projectId: "p1",
-    projectName: "Johnson Residence",
-    size: 2458000,
-    createdAt: "2024-12-01T10:30:00Z",
-    aiTags: ["insurance", "state-farm", "roof-damage"],
-    aiConfidence: 0.94,
-  },
-  {
-    id: "2",
-    name: "Final_Estimate_v2.xlsx",
-    type: "application/xlsx",
-    category: "estimate",
-    projectId: "p1",
-    projectName: "Johnson Residence",
-    size: 125000,
-    createdAt: "2024-12-02T14:15:00Z",
-    aiTags: ["roofing", "materials", "labor-costs"],
-    aiConfidence: 0.89,
-  },
-  {
-    id: "3",
-    name: "Roof_Damage_Photo_01.jpg",
-    type: "image/jpeg",
-    category: "photo",
-    projectId: "p2",
-    projectName: "Smith Commercial",
-    size: 4500000,
-    createdAt: "2024-11-28T09:00:00Z",
-    aiTags: ["hail-damage", "shingles", "before-repair"],
-    aiConfidence: 0.97,
-  },
-  {
-    id: "4",
-    name: "Subcontractor_Agreement.pdf",
-    type: "application/pdf",
-    category: "contract",
-    projectId: "p2",
-    projectName: "Smith Commercial",
-    size: 890000,
-    createdAt: "2024-11-25T16:45:00Z",
-    aiTags: ["subcontractor", "legal", "signed"],
-    aiConfidence: 0.92,
-  },
-  {
-    id: "5",
-    name: "Materials_Invoice_HD.pdf",
-    type: "application/pdf",
-    category: "invoice",
-    projectId: "p1",
-    projectName: "Johnson Residence",
-    size: 156000,
-    createdAt: "2024-12-03T08:20:00Z",
-    aiTags: ["home-depot", "materials", "paid"],
-    aiConfidence: 0.88,
-  },
-];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -145,12 +84,11 @@ function getCategoryColor(category: string): string {
 }
 
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<DocumentItem[]>(MOCK_DOCUMENTS);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [sortBy, setSortBy] = useState<"date" | "name" | "size">("date");
-  const [isOrganizing, setIsOrganizing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -159,10 +97,24 @@ export default function DocumentsPage() {
   const [uploadingFiles, setUploadingFiles] = useState<{ name: string; progress: number; status: "uploading" | "done" | "error" }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fetch documents from API
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
+    async function fetchDocuments() {
+      try {
+        const response = await fetch("/api/documents");
+        if (response.ok) {
+          const data = await response.json();
+          setDocuments(data.documents || []);
+        } else {
+          toast.error("Failed to load documents");
+        }
+      } catch {
+        toast.error("Failed to load documents");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchDocuments();
   }, []);
 
   // Filter documents
@@ -193,77 +145,12 @@ export default function DocumentsPage() {
     return documents.filter(d => d.category === categoryId).length;
   };
 
-  const handleAIOrganize = async () => {
-    setIsOrganizing(true);
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    setIsOrganizing(false);
-    toast.success("Documents organized! AI has categorized and tagged all documents.");
-  };
-
-  const handleFileSelect = (files: FileList | null) => {
+  const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
-    const newFiles = Array.from(files).map(file => ({
-      name: file.name,
-      progress: 0,
-      status: "uploading" as const,
-    }));
-    
-    setUploadingFiles(prev => [...prev, ...newFiles]);
-    
-    // Simulate upload progress for each file
-    newFiles.forEach((_, index) => {
-      const fileIndex = uploadingFiles.length + index;
-      simulateUpload(fileIndex, files[index]);
-    });
-  };
-
-  const simulateUpload = async (index: number, file: globalThis.File) => {
-    // Simulate upload progress
-    for (let progress = 0; progress <= 100; progress += 10) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      setUploadingFiles(prev => 
-        prev.map((f, i) => i === index ? { ...f, progress } : f)
-      );
-    }
-    
-    // Mark as done and add to documents
-    setUploadingFiles(prev => 
-      prev.map((f, i) => i === index ? { ...f, status: "done" as const } : f)
-    );
-    
-    // Add mock document after upload
-    const newDoc: DocumentItem = {
-      id: `new-${Date.now()}-${index}`,
-      name: file.name,
-      type: file.type,
-      category: detectCategory(file.name, file.type),
-      projectId: "p1",
-      projectName: "Unassigned",
-      size: file.size,
-      createdAt: new Date().toISOString(),
-      aiTags: ["new-upload", "pending-review"],
-      aiConfidence: 0.75,
-    };
-    
-    setDocuments(prev => [newDoc, ...prev]);
-    
-    // Clear from uploading list after a delay
-    setTimeout(() => {
-      setUploadingFiles(prev => prev.filter((_, i) => i !== index));
-    }, 1500);
-  };
-
-  const detectCategory = (name: string, type: string): string => {
-    const lowerName = name.toLowerCase();
-    if (type.startsWith("image/")) return "photo";
-    if (lowerName.includes("scope") || lowerName.includes("carrier")) return "scope";
-    if (lowerName.includes("estimate") || lowerName.includes("quote")) return "estimate";
-    if (lowerName.includes("contract") || lowerName.includes("agreement")) return "contract";
-    if (lowerName.includes("invoice") || lowerName.includes("receipt")) return "invoice";
-    if (lowerName.includes("report")) return "report";
-    return "other";
+    // For now, show a message that uploads should be done through projects
+    toast.info("To upload files, please go to a specific project and use the upload feature there.");
+    setUploadOpen(false);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -279,11 +166,20 @@ export default function DocumentsPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    handleFileSelect(e.dataTransfer.files);
+    handleFileUpload(e.dataTransfer.files);
+  };
+
+  const handleDocumentClick = (doc: DocumentItem) => {
+    if (doc.url) {
+      window.open(doc.url, '_blank');
+    } else if (doc.isGenerated) {
+      // Navigate to project to view generated document
+      window.location.href = `/projects/${doc.projectId}`;
+    }
   };
 
   return (
-    <AppShell>
+    <AppShell mobileTitle="Documents">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <header className="mb-6">
@@ -291,20 +187,12 @@ export default function DocumentsPage() {
             <div className="text-center sm:text-left">
               <h1 className="text-2xl font-semibold text-foreground">Documents</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                AI-organized documents across all your projects
+                All documents across your projects
               </p>
             </div>
             
-            {/* Action Buttons - Slim Pills */}
+            {/* Action Buttons */}
             <div className="flex items-center justify-center sm:justify-start gap-2">
-              <button 
-                onClick={handleAIOrganize}
-                disabled={isOrganizing}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-8 px-4 text-xs font-medium rounded-full border border-border bg-card hover:bg-muted transition-colors disabled:opacity-50"
-              >
-                <Wand2 className={`w-3.5 h-3.5 ${isOrganizing ? "animate-spin" : ""}`} />
-                {isOrganizing ? "Organizing..." : "AI Organize"}
-              </button>
               <button 
                 onClick={() => setUploadOpen(true)}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-8 px-4 text-xs font-medium rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -331,7 +219,7 @@ export default function DocumentsPage() {
           
           {/* Filter Pills Row */}
           <div className={`flex items-center gap-2 pb-1 ${categoryOpen || sortOpen ? "" : "overflow-x-auto"}`}>
-            {/* Category Dropdown - Custom iOS Pill Style */}
+            {/* Category Dropdown */}
             <div className="relative shrink-0">
               <button
                 onClick={() => { setCategoryOpen(!categoryOpen); setSortOpen(false); }}
@@ -363,7 +251,7 @@ export default function DocumentsPage() {
               )}
             </div>
 
-            {/* Sort Dropdown - Custom iOS Pill Style */}
+            {/* Sort Dropdown */}
             <div className="relative shrink-0">
               <button
                 onClick={() => { setSortOpen(!sortOpen); setCategoryOpen(false); }}
@@ -398,7 +286,7 @@ export default function DocumentsPage() {
               )}
             </div>
 
-            {/* View Toggle - iOS Segmented Control Style */}
+            {/* View Toggle */}
             <div className="flex items-center h-7 p-0.5 rounded-full bg-muted/60 shrink-0">
               <button
                 onClick={() => setViewMode("list")}
@@ -442,15 +330,14 @@ export default function DocumentsPage() {
             <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
               {searchQuery || selectedCategory !== "all" 
                 ? "Try adjusting your search or filter to find what you're looking for."
-                : "Upload documents to get started. Our AI will automatically organize them."}
+                : "Upload documents to your projects or generate AI documents to see them here."}
             </p>
-            <button 
-              onClick={() => setUploadOpen(true)}
+            <Link 
+              href="/projects"
               className="inline-flex items-center justify-center gap-1.5 h-8 px-5 text-xs font-medium rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              <Upload className="w-3.5 h-3.5" />
-              Upload Documents
-            </button>
+              Go to Projects
+            </Link>
           </Card>
         ) : viewMode === "list" ? (
           <div className="space-y-2">
@@ -459,6 +346,7 @@ export default function DocumentsPage() {
                 key={doc.id} 
                 className="p-4 hover:shadow-md transition-all cursor-pointer group"
                 noPadding={false}
+                onClick={() => handleDocumentClick(doc)}
               >
                 <div className="flex items-center gap-4">
                   {/* Icon */}
@@ -483,27 +371,37 @@ export default function DocumentsPage() {
                           </Link>
                           <span className="mx-1.5">•</span>
                           <span>{formatDate(doc.createdAt)}</span>
+                          <span className="mx-1.5">•</span>
+                          <span>{formatFileSize(doc.size)}</span>
                         </p>
                       </div>
 
-                      {/* AI Confidence Badge */}
+                      {/* Badges */}
                       <div className="flex items-center gap-2">
-                        <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs">
-                          <Sparkles className="w-3 h-3" />
-                          {Math.round(doc.aiConfidence * 100)}%
-                        </div>
-                        <button 
-                          className="p-1.5 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
-                          aria-label="More options"
-                        >
-                          <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                        </button>
+                        {doc.isGenerated && (
+                          <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs">
+                            <Sparkles className="w-3 h-3" />
+                            AI
+                          </div>
+                        )}
+                        {doc.url && (
+                          <a 
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+                            aria-label="Open file"
+                          >
+                            <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                          </a>
+                        )}
                       </div>
                     </div>
 
                     {/* AI Tags */}
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {doc.aiTags.map(tag => (
+                      {doc.aiTags.slice(0, 4).map(tag => (
                         <span 
                           key={tag} 
                           className="px-2 py-0.5 text-[10px] rounded-full bg-muted text-muted-foreground"
@@ -511,6 +409,11 @@ export default function DocumentsPage() {
                           {tag}
                         </span>
                       ))}
+                      {doc.aiTags.length > 4 && (
+                        <span className="px-2 py-0.5 text-[10px] rounded-full bg-muted text-muted-foreground">
+                          +{doc.aiTags.length - 4}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -524,6 +427,7 @@ export default function DocumentsPage() {
                 key={doc.id} 
                 className="p-4 hover:shadow-md transition-all cursor-pointer group text-center"
                 noPadding={false}
+                onClick={() => handleDocumentClick(doc)}
               >
                 {/* Icon */}
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-3 ${getCategoryColor(doc.category)}`}>
@@ -541,7 +445,8 @@ export default function DocumentsPage() {
                 </p>
 
                 {/* Meta */}
-                <div className="text-[10px] text-muted-foreground">
+                <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
+                  {doc.isGenerated && <Sparkles className="w-3 h-3 text-primary" />}
                   {formatDate(doc.createdAt)}
                 </div>
 
@@ -577,6 +482,10 @@ export default function DocumentsPage() {
                 <Building2 className="w-3.5 h-3.5" />
                 <span>{new Set(sortedDocuments.map(d => d.projectId)).size} projects</span>
               </div>
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{sortedDocuments.filter(d => d.isGenerated).length} AI generated</span>
+              </div>
             </div>
           </div>
         )}
@@ -605,89 +514,26 @@ export default function DocumentsPage() {
               </button>
             </div>
             
-            {/* Drop Zone */}
+            {/* Content */}
             <div className="p-5">
-              <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`
-                  relative flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed cursor-pointer transition-all
-                  ${isDragging 
-                    ? "border-primary bg-primary/5" 
-                    : "border-border hover:border-primary/50 hover:bg-muted/30"
-                  }
-                `}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  onChange={(e) => handleFileSelect(e.target.files)}
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp"
-                />
-                
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition-colors ${
-                  isDragging ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                }`}>
-                  <CloudUpload className="w-7 h-7" />
+              <div className="text-center py-8">
+                <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                  <CloudUpload className="w-7 h-7 text-muted-foreground" />
                 </div>
-                
-                <p className="text-sm font-medium text-foreground mb-1">
-                  {isDragging ? "Drop files here" : "Drag & drop files"}
+                <p className="text-sm text-foreground mb-2">
+                  Upload files through your projects
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  or click to browse
+                <p className="text-xs text-muted-foreground mb-4">
+                  Go to a specific project to upload scope documents, photos, and other files.
                 </p>
-                <p className="text-[10px] text-muted-foreground/70 mt-2">
-                  PDF, Word, Excel, Images up to 25MB
-                </p>
+                <Link
+                  href="/projects"
+                  onClick={() => setUploadOpen(false)}
+                  className="inline-flex items-center justify-center gap-1.5 h-9 px-5 text-sm font-medium rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Go to Projects
+                </Link>
               </div>
-
-              {/* Upload Progress */}
-              {uploadingFiles.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {uploadingFiles.map((file, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/30"
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        file.status === "done" ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"
-                      }`}>
-                        {file.status === "done" ? (
-                          <CheckCircle2 className="w-4 h-4" />
-                        ) : (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-foreground truncate">{file.name}</p>
-                        <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-300 ${
-                              file.status === "done" ? "bg-green-500" : "bg-primary"
-                            }`}
-                            style={{ width: `${file.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground shrink-0">
-                        {file.status === "done" ? "Done" : `${file.progress}%`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 py-4 border-t border-border bg-muted/20">
-              <p className="text-[10px] text-muted-foreground text-center">
-                AI will automatically categorize and tag your documents
-              </p>
             </div>
           </div>
         </div>

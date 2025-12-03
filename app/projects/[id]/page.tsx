@@ -9,36 +9,6 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-function formatAddress(address: string): { line1: string; line2: string } {
-  const parts = address.split(",").map(p => p.trim());
-  
-  if (parts.length >= 3) {
-    const street = parts[0];
-    const cityStateZip = parts.slice(1).join(", ")
-      .replace(/Oklahoma/gi, "OK")
-      .replace(/Texas/gi, "TX")
-      .replace(/California/gi, "CA")
-      .replace(/Florida/gi, "FL")
-      .replace(/New York/gi, "NY")
-      .replace(/Arizona/gi, "AZ")
-      .replace(/Colorado/gi, "CO")
-      .replace(/Georgia/gi, "GA")
-      .replace(/Illinois/gi, "IL")
-      .replace(/Michigan/gi, "MI")
-      .replace(/North Carolina/gi, "NC")
-      .replace(/Ohio/gi, "OH")
-      .replace(/Pennsylvania/gi, "PA")
-      .replace(/Tennessee/gi, "TN")
-      .replace(/Virginia/gi, "VA")
-      .replace(/Washington/gi, "WA");
-    return { line1: street, line2: cityStateZip };
-  } else if (parts.length === 2) {
-    return { line1: parts[0], line2: parts[1] };
-  }
-  
-  return { line1: address, line2: "" };
-}
-
 export default async function ProjectDetailPage({ params }: PageProps) {
   const { id } = await params;
 
@@ -110,6 +80,11 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             mimeType: u.mimeType,
             fileSize: u.fileSize,
             createdAt: u.createdAt.toISOString(),
+            // AI analysis data
+            tags: u.tags || [],
+            category: u.category || null,
+            description: u.description || null,
+            aiAnalyzedAt: u.aiAnalyzedAt?.toISOString() || null,
           }))}
           documents={project.documents.map((d) => ({
             id: d.id,

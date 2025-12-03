@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -57,59 +58,146 @@ const navigation: NavItem[] = [
   },
 ];
 
+// User menu items for the dropdown
+const userMenuItems = [
+  { href: "/settings", label: "Settings", icon: "⚙️" },
+  { href: "/settings/billing", label: "Billing", icon: "💳" },
+  { href: "/settings/help", label: "Help & Support", icon: "❓" },
+];
+
 interface MobileNavProps {
   className?: string;
 }
 
 export function MobileNav({ className = "" }: MobileNavProps) {
   const pathname = usePathname();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard" || pathname === "/";
     return pathname.startsWith(href);
   };
 
+  const isSettingsActive = pathname.startsWith("/settings");
+
   return (
-    <nav
-      className={`
-        lg:hidden fixed bottom-0 left-0 right-0 z-50
-        bg-card/95 backdrop-blur-md border-t border-border
-        pb-[env(safe-area-inset-bottom)]
-        ${className}
-      `}
-      aria-label="Mobile navigation"
-    >
-      <ul className="flex items-center justify-around h-[56px] px-2">
-        {navigation.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={`
-                  flex flex-col items-center justify-center
-                  w-14 h-12 rounded-lg
-                  transition-all duration-150
-                  ${
-                    active
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }
-                `}
-              >
-                <span className="mb-0.5">
-                  {active && item.activeIcon ? item.activeIcon : item.icon}
-                </span>
-                <span className={`text-[10px] font-medium ${active ? "text-primary" : ""}`}>
-                  {item.label}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <>
+      {/* User menu backdrop */}
+      {showUserMenu && (
+        <div 
+          className="lg:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+          onClick={() => setShowUserMenu(false)}
+        />
+      )}
+
+      {/* User menu dropdown */}
+      {showUserMenu && (
+        <div className="lg:hidden fixed bottom-[calc(56px+env(safe-area-inset-bottom)+8px)] right-3 z-50 w-48 py-1.5 rounded-2xl bg-card border border-border shadow-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
+          <div className="px-3 py-2 border-b border-border mb-1">
+            <p className="text-sm font-medium text-foreground">My Account</p>
+            <p className="text-xs text-muted-foreground">user@example.com</p>
+          </div>
+          {userMenuItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setShowUserMenu(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              <span>{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
+          <div className="border-t border-border mt-1 pt-1">
+            <button
+              onClick={() => {
+                setShowUserMenu(false);
+                // TODO: Wire to Clerk signOut
+              }}
+              className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <span>🚪</span>
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+
+      <nav
+        className={`
+          lg:hidden fixed bottom-0 left-0 right-0 z-50
+          bg-card/95 backdrop-blur-md border-t border-border
+          pb-[env(safe-area-inset-bottom)]
+          ${className}
+        `}
+        aria-label="Mobile navigation"
+      >
+        <div className="flex items-center justify-between h-[56px] px-2">
+          {/* Main navigation items */}
+          <ul className="flex items-center justify-around flex-1">
+            {navigation.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`
+                      flex flex-col items-center justify-center
+                      w-14 h-12 rounded-lg
+                      transition-all duration-150
+                      ${
+                        active
+                          ? "text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      }
+                    `}
+                  >
+                    <span className="mb-0.5">
+                      {active && item.activeIcon ? item.activeIcon : item.icon}
+                    </span>
+                    <span className={`text-[10px] font-medium ${active ? "text-primary" : ""}`}>
+                      {item.label}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* User avatar button - right side */}
+          <div className="flex items-center pr-1">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className={`
+                flex flex-col items-center justify-center
+                w-14 h-12 rounded-lg
+                transition-all duration-150
+                ${isSettingsActive || showUserMenu ? "text-primary" : "text-muted-foreground hover:text-foreground"}
+              `}
+              aria-label="User menu"
+              aria-expanded={showUserMenu}
+            >
+              {/* Avatar placeholder - will be replaced with Clerk UserButton */}
+              <div className={`
+                w-7 h-7 rounded-full flex items-center justify-center mb-0.5
+                ${isSettingsActive || showUserMenu 
+                  ? "bg-primary text-primary-foreground ring-2 ring-primary/30" 
+                  : "bg-muted text-muted-foreground"
+                }
+              `}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <span className={`text-[10px] font-medium ${isSettingsActive || showUserMenu ? "text-primary" : ""}`}>
+                Me
+              </span>
+            </button>
+          </div>
+        </div>
+      </nav>
+    </>
   );
 }
 
