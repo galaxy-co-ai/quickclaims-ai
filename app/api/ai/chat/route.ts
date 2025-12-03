@@ -135,22 +135,25 @@ export async function POST(request: NextRequest) {
 
     // Check if the AI wants to use tools
     if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
-      // Execute all tool calls
-      const toolResults: Array<{ name: string; result: ToolResult }> = []
+      // Execute all tool calls (filter to only function-type tool calls)
+      const toolResults: Array<{ name: string; result: ToolResult; id: string }> = []
 
       for (const toolCall of assistantMessage.tool_calls) {
+        // Type guard: ensure this is a function tool call
+        if (toolCall.type !== 'function') continue
+        
         const toolName = toolCall.function.name
         const args = JSON.parse(toolCall.function.arguments)
         
         const result = await executeToolCall(toolName, args)
-        toolResults.push({ name: toolName, result })
+        toolResults.push({ name: toolName, result, id: toolCall.id })
       }
 
       // Build tool result messages
-      const toolMessages = assistantMessage.tool_calls.map((toolCall, index) => ({
+      const toolMessages = toolResults.map((tr) => ({
         role: 'tool' as const,
-        tool_call_id: toolCall.id,
-        content: JSON.stringify(toolResults[index].result),
+        tool_call_id: tr.id,
+        content: JSON.stringify(tr.result),
       }))
 
       // Get final response after tool execution
