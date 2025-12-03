@@ -220,27 +220,7 @@ export default function DashboardPage() {
     e.preventDefault();
     if ((!input.trim() && attachments.length === 0) || isLoading) return;
 
-    // Build message content with attachment info
-    let messageContent = input.trim();
-    if (attachments.length > 0) {
-      const attachmentDescriptions = attachments.map(a => 
-        `[Attached ${a.type}: ${a.file.name}]`
-      ).join('\n');
-      messageContent = messageContent 
-        ? `${messageContent}\n\n${attachmentDescriptions}`
-        : attachmentDescriptions;
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: messageContent,
-      timestamp: new Date(),
-      attachments: attachments.length > 0 ? [...attachments] : undefined,
-    };
-
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const currentAttachments = [...attachments];
     setInput("");
     setAttachments([]);
     setIsLoading(true);
@@ -249,6 +229,47 @@ export default function DashboardPage() {
     abortControllerRef.current = new AbortController();
 
     try {
+      // Upload files first if any
+      let uploadedFiles: Array<{ name: string; url: string; type: string }> = [];
+      if (currentAttachments.length > 0) {
+        const formData = new FormData();
+        currentAttachments.forEach(a => formData.append('files', a.file));
+        
+        const uploadResponse = await fetch("/api/ai/upload", {
+          method: "POST",
+          body: formData,
+          signal: abortControllerRef.current.signal,
+        });
+        
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json();
+          uploadedFiles = uploadData.files || [];
+        }
+      }
+
+      // Build message content with attachment info and URLs
+      let messageContent = input.trim();
+      if (uploadedFiles.length > 0) {
+        const attachmentDescriptions = uploadedFiles.map(f => {
+          const isImage = f.type.startsWith('image/');
+          return `[Attached ${isImage ? 'image' : 'document'}: ${f.name}]\nURL: ${f.url}`;
+        }).join('\n\n');
+        messageContent = messageContent 
+          ? `${messageContent}\n\n${attachmentDescriptions}`
+          : attachmentDescriptions;
+      }
+
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: "user",
+        content: messageContent,
+        timestamp: new Date(),
+        attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
+      };
+
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+
       // Call the AI API with function calling
       const response = await fetch("/api/ai/chat", {
         method: "POST",

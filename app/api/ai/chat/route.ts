@@ -1,14 +1,13 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { db } from '@/lib/db'
 import { AI_TOOLS, TOOL_DESCRIPTIONS, ToolName } from '@/lib/ai/tools'
-import { executeToolCall, ToolResult } from '@/lib/ai/executor'
+import { executeToolCall, ToolResult, setCurrentUserId } from '@/lib/ai/executor'
+import { requireAuthUserId } from '@/lib/auth'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
-
-const TEMP_USER_ID = process.env.TEMP_USER_ID || 'dev-user-001'
 
 // Enhanced system prompt for the powerful AI assistant with deep domain expertise
 const SYSTEM_PROMPT = `You are QuickClaims AI, an incredibly powerful AI assistant for roofing contractors managing insurance claim supplements. You have DEEP expertise in the insurance supplement workflow and can generate professional documents that are ready to submit.
@@ -99,18 +98,24 @@ interface ChatMessage {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const userId = await requireAuthUserId()
+    
+    // Set user ID for executor tool calls
+    setCurrentUserId(userId)
+
     const body = await request.json()
     const { messages } = body as { messages: ChatMessage[] }
 
     if (!messages || !Array.isArray(messages)) {
-      return new Response(
-        JSON.stringify({ error: 'Messages array is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      return NextResponse.json(
+        { error: 'Messages array is required' },
+        { status: 400 }
       )
     }
 
     // Get rich user context
-    const userContext = await getUserContext()
+    const userContext = await getUserContext(userId)
 
     // Build the full system prompt with context
     const fullSystemPrompt = SYSTEM_PROMPT + userContext
@@ -214,10 +219,13 @@ export async function POST(request: NextRequest) {
       }
     )
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(
-      JSON.stringify({ error: 'Failed to process chat', details: errorMessage }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    return NextResponse.json(
+      { error: 'Failed to process chat', details: errorMessage },
+      { status: 500 }
     )
   }
 }
@@ -225,12 +233,12 @@ export async function POST(request: NextRequest) {
 /**
  * Get rich context about the user's data
  */
-async function getUserContext(): Promise<string> {
+async function getUserContext(userId: string): Promise<string> {
   try {
     const [projects, claims, recentActivity] = await Promise.all([
       // Get projects with details
       db.project.findMany({
-        where: { userId: TEMP_USER_ID },
+        where: { userId },
         take: 5,
         orderBy: { updatedAt: 'desc' },
         include: {
@@ -240,7 +248,7 @@ async function getUserContext(): Promise<string> {
       }),
       // Get claim stats
       db.claim.findMany({
-        where: { project: { userId: TEMP_USER_ID } },
+        where: { project: { userId } },
         select: {
           status: true,
           carrier: true,
@@ -249,7 +257,7 @@ async function getUserContext(): Promise<string> {
       }),
       // Get recent activity
       db.claimActivity.findMany({
-        where: { claim: { project: { userId: TEMP_USER_ID } } },
+        where: { claim: { project: { userId } } },
         take: 3,
         orderBy: { createdAt: 'desc' },
         select: { action: true, description: true, createdAt: true },

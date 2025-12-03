@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { db } from '@/lib/db'
+import { requireAuthUserId } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const userId = await requireAuthUserId()
+    
     const formData = await request.formData()
     const file = formData.get('file') as File
     const projectId = formData.get('projectId') as string
@@ -13,6 +17,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'File and projectId are required' },
         { status: 400 }
+      )
+    }
+    
+    // Verify project belongs to user
+    const project = await db.project.findFirst({
+      where: { id: projectId, userId },
+    })
+    
+    if (!project) {
+      return NextResponse.json(
+        { error: 'Project not found or access denied' },
+        { status: 404 }
       )
     }
     
@@ -35,7 +51,9 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(upload, { status: 201 })
   } catch (error) {
-    console.error('Error uploading file:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to upload file' },
       { status: 500 }

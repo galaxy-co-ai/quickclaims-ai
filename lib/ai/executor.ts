@@ -12,7 +12,19 @@ import {
   saveDocument
 } from './document-generator'
 
-const TEMP_USER_ID = process.env.TEMP_USER_ID || 'dev-user-001'
+// User ID is now passed in from the API route
+let currentUserId: string | null = null
+
+export function setCurrentUserId(userId: string) {
+  currentUserId = userId
+}
+
+function getUserId(): string {
+  if (!currentUserId) {
+    throw new Error('User ID not set - call setCurrentUserId first')
+  }
+  return currentUserId
+}
 
 /**
  * Result of executing an AI tool
@@ -161,7 +173,7 @@ async function createProject(args: {
 }): Promise<ToolResult> {
   const project = await db.project.create({
     data: {
-      userId: TEMP_USER_ID,
+      userId: getUserId(),
       clientName: args.clientName,
       address: args.address,
       projectType: args.projectType,
@@ -191,7 +203,7 @@ async function listProjects(args: {
 }): Promise<ToolResult> {
   const projects = await db.project.findMany({
     where: {
-      userId: TEMP_USER_ID,
+      userId: getUserId(),
       ...(args.status && { status: args.status }),
     },
     take: args.limit || 10,
@@ -253,7 +265,7 @@ async function getProjectDetails(args: {
   } else if (args.projectName) {
     project = await db.project.findFirst({
       where: {
-        userId: TEMP_USER_ID,
+        userId: getUserId(),
         clientName: { contains: args.projectName, mode: 'insensitive' },
       },
       include: {
@@ -477,7 +489,7 @@ async function generateProjectBriefDoc(args: { projectId: string }): Promise<Too
 async function listDocuments(args: { projectId?: string }): Promise<ToolResult> {
   const where = args.projectId
     ? { projectId: args.projectId }
-    : { project: { userId: TEMP_USER_ID } }
+    : { project: { userId: getUserId() } }
 
   const documents = await db.document.findMany({
     where,

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const TEMP_USER_ID = process.env.TEMP_USER_ID || 'dev-user-001'
+import { requireAuthUserId } from '@/lib/auth'
 
 /**
  * GET /api/documents
@@ -9,11 +8,14 @@ const TEMP_USER_ID = process.env.TEMP_USER_ID || 'dev-user-001'
  */
 export async function GET() {
   try {
+    // Get authenticated user
+    const userId = await requireAuthUserId()
+    
     // Get all AI-generated documents
     const documents = await db.document.findMany({
       where: {
         project: {
-          userId: TEMP_USER_ID,
+          userId,
         },
       },
       include: {
@@ -32,7 +34,7 @@ export async function GET() {
     const uploads = await db.upload.findMany({
       where: {
         project: {
-          userId: TEMP_USER_ID,
+          userId,
         },
       },
       include: {
@@ -103,7 +105,9 @@ export async function GET() {
       }
     })
   } catch (error) {
-    // Use a proper error logging approach instead of console.error in production
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { error: 'Failed to fetch documents', details: errorMessage },
