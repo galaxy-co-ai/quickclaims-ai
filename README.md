@@ -1,39 +1,61 @@
 # QuickClaims.ai
 
-AI-powered insurance claim supplement platform for construction contractors. Upload carrier scopes, detect missing items, generate IRC-backed defense notes, and build professional supplement packages.
+AI-powered insurance claim supplement platform for roofing contractors. Upload carrier scopes, photos, and measurements — the AI generates professional delta analyses, defense notes, and supplement packages with IRC code citations.
 
-**Last Updated:** December 2, 2025
+**Last Updated:** December 3, 2025
+
+## ✨ What's New - AI Document Generation
+
+The AI assistant is now a domain expert in roofing supplement estimation. It can:
+
+- **Generate Delta Analysis Reports** - Compare carrier scope against IRC requirements
+- **Create Defense Notes** - 2-3 sentence notes with code citations, ready for Xactimate
+- **Write Cover Letters** - Professional submission emails to carriers
+- **Build Supplement Letters** - Complete submission documents with all details
+- **Draft Rebuttals** - Counter carrier objections with evidence
+- **Produce Project Briefs** - Summaries with timelines and next steps
+
+All generated documents auto-save to the **AI Docs** tab of each project.
 
 ## Features
 
+### AI Assistant (Powered by Claude & GPT-4)
+- **Domain Expert** - Knows IRC codes, Xactimate codes, supplement workflow
+- **Proactive Generation** - Suggests documents based on what you share
+- **Natural Conversation** - Just describe what you need in plain English
+- **Action-Oriented** - Creates documents directly, doesn't just explain how
+
+### Knowledge Base
+- **100+ Xactimate Codes** - Full pricing and descriptions
+- **IRC Building Codes** - R903, R904, R905, R806 with defense templates
+- **Commonly Missed Items** - 15+ items carriers frequently omit
+- **Supplement Workflow** - 6-phase process with KPIs
+
 ### Core Platform
-- **AI Concierge** - Guided project creation wizard
-- **Document Upload** - Insurance scopes (PDF), photos, project documents
-- **AI Document Generation** - Roadmaps, materials lists, cost estimates, briefs
-- **Smart Caching** - Redis-powered caching for fast repeat generations
+- **Project Management** - iOS-style interface with cards and tabs
+- **Document Upload** - Carrier scopes (PDF), photos, measurements
+- **Photo Analysis** - GPT-4 Vision detects components and damage
+- **Smart Organization** - AI tags and categorizes uploads
 - **Export Options** - CSV and PDF exports
 
-### Insurance Claims (Complete)
+### Insurance Claims
 - **Carrier Scope Parsing** - AI extracts line items from SOL PDFs
-- **D$/SQ Analytics** - Dollar per square calculation and tracking
-- **Photo Analysis** - GPT-4 Vision detects roof components and damage
-- **Delta Detection** - Finds missing items by comparing scope vs. photos + code requirements
-- **IRC Code References** - 9 complete IRC codes with defense templates
-- **Defense Note Generator** - Professional justifications with code citations
-- **Supplement Builder** - Complete package with line items, photos, defense notes
-- **Xactimate Export** - CSV format compatible with Xactimate import
-- **Analytics Dashboard** - D$/SQ trends, carrier comparisons, pipeline tracking
-- **Workflow Tracking** - 11 claim stages with expected days and next actions
-- **Build Day Checklist** - 50+ item mobile-friendly photo checklist
+- **D$/SQ Analytics** - Dollar per square calculation
+- **Delta Detection** - Find missing items vs. photos + code requirements
+- **Defense Note Generator** - Professional justifications with citations
+- **Supplement Builder** - Complete packages ready to submit
+- **Xactimate Export** - CSV compatible with Xactimate import
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS
 - **Database**: Neon PostgreSQL + Prisma ORM
 - **File Storage**: Vercel Blob
-- **AI**: OpenAI GPT-4o / GPT-4 Vision
+- **AI**: 
+  - OpenAI GPT-4o (chat, vision)
+  - Anthropic Claude Sonnet (document generation)
 - **Caching**: Upstash Redis
 - **Vector Search**: Upstash Vector
 - **Deployment**: Vercel
@@ -44,108 +66,77 @@ AI-powered insurance claim supplement platform for construction contractors. Upl
 quickclaims-ai/
 ├── app/
 │   ├── api/
-│   │   ├── ai/generate/              # AI document generation
+│   │   ├── ai/
+│   │   │   ├── chat/                    # AI assistant endpoint
+│   │   │   └── generate/                # Legacy document generation
 │   │   ├── claims/[claimId]/
-│   │   │   ├── analyze-photo/        # GPT-4 Vision analysis
-│   │   │   ├── defense-notes/        # Defense note generation
-│   │   │   ├── deltas/[deltaId]/     # Delta item management
-│   │   │   ├── generate-deltas/      # Delta detection engine
-│   │   │   ├── parse-scope/          # Carrier scope parsing
-│   │   │   └── supplement/           # Supplement package builder
-│   │   ├── exports/                  # CSV/PDF exports
-│   │   ├── projects/                 # Project CRUD + activity
-│   │   └── uploads/                  # File upload handling
-│   ├── claims/
-│   │   ├── [id]/
-│   │   │   ├── page.tsx              # Claim detail
-│   │   │   ├── ClaimDetailClient.tsx # Tabbed interface (6 tabs)
-│   │   │   └── checklist/            # Build day photo checklist
-│   │   ├── analytics/                # D$/SQ and pipeline analytics
-│   │   └── page.tsx                  # Claims list
-│   ├── dashboard/                    # AI concierge
-│   └── projects/[id]/                # Project detail
+│   │   │   ├── analyze-photo/           # GPT-4 Vision analysis
+│   │   │   ├── defense-notes/           # Defense note generation
+│   │   │   ├── generate-deltas/         # Delta detection engine
+│   │   │   └── parse-scope/             # Carrier scope parsing
+│   │   ├── documents/                   # Document listing
+│   │   ├── exports/                     # CSV/PDF exports
+│   │   ├── photos/analyze/              # Batch photo analysis
+│   │   ├── projects/                    # Project CRUD
+│   │   └── uploads/                     # File uploads
+│   ├── dashboard/                       # AI chat interface
+│   ├── documents/                       # Documents list
+│   ├── projects/[id]/                   # Project detail (4 tabs)
+│   └── settings/                        # User settings
 ├── components/
-│   ├── claims/                       # Claim components
-│   │   ├── ClaimSummaryCard.tsx
-│   │   ├── DefenseNotes.tsx
-│   │   ├── DeltaList.tsx
-│   │   ├── LineItemsTable.tsx
-│   │   ├── ScopeUploader.tsx
-│   │   ├── StartClaimButton.tsx
-│   │   └── SupplementBuilder.tsx
-│   ├── project/                      # Project components
-│   └── ui/                           # Reusable primitives
+│   ├── claims/                          # Claim UI components
+│   ├── layout/                          # AppShell, Sidebar, MobileNav
+│   ├── project/                         # Project components
+│   └── ui/                              # Reusable primitives
 ├── lib/
-│   ├── ai/                           # OpenAI utilities
-│   ├── claims/
-│   │   ├── irc-codes.ts              # IRC code reference + defense templates
-│   │   ├── photo-analysis.ts         # GPT-4 Vision prompts
-│   │   ├── photo-checklist.ts        # Build day checklist items (50+)
-│   │   ├── schemas.ts                # Claim status definitions
-│   │   ├── scope-parser.ts           # Carrier scope extraction
-│   │   ├── workflow.ts               # Stage tracking utilities
-│   │   ├── xactimate-codes.ts        # Xactimate code library (50+ codes)
-│   │   └── xactimate-export.ts       # ESX export format
-│   ├── extract/                      # PDF text extraction
-│   └── validations/                  # Zod schemas
+│   ├── ai/
+│   │   ├── knowledge/                   # Domain knowledge base
+│   │   │   ├── commonly-missed.ts       # Items carriers omit
+│   │   │   ├── document-templates.ts    # Output templates
+│   │   │   ├── irc-codes-full.ts        # Building codes
+│   │   │   ├── supplement-workflow.ts   # Process knowledge
+│   │   │   └── xactimate-full.ts        # 100+ line item codes
+│   │   ├── anthropic.ts                 # Claude integration
+│   │   ├── document-generator.ts        # Document generation
+│   │   ├── executor.ts                  # Tool execution
+│   │   ├── openai.ts                    # GPT-4 integration
+│   │   └── tools.ts                     # AI tool definitions
+│   ├── claims/                          # Claim utilities
+│   └── validations/                     # Zod schemas
 ├── prisma/
-│   └── schema.prisma                 # Database schema
-└── WARP.md                           # Project rules
+│   └── schema.prisma                    # Database schema
+└── README.md
 ```
 
-## Database Models
+## AI Tools Available
 
-### Core
-- **Project** - Roofing project with client info, uploads, documents
-- **Upload** - Files stored in Vercel Blob
-- **Document** - AI-generated documents (roadmap, materials, estimate, brief)
+| Tool | Description |
+|------|-------------|
+| `generate_delta_analysis` | Create delta report comparing scope to code requirements |
+| `generate_cover_letter` | Professional carrier submission email |
+| `generate_defense_notes` | Xactimate-ready notes with IRC citations |
+| `generate_supplement_letter` | Complete submission document |
+| `generate_rebuttal` | Counter to carrier objections |
+| `generate_project_brief` | Project summary with timeline |
+| `lookup_xactimate_code` | Look up code pricing and description |
+| `lookup_irc_code` | Get IRC requirements for components |
+| `analyze_photos` | AI vision analysis of project photos |
+| `create_project` | Create new project |
+| `create_claim` | Start insurance claim tracking |
 
-### Insurance Claims
-- **Claim** - Insurance claim linked to project, 11 workflow stages
-- **CarrierScope** - Parsed statement of loss with totals
-- **LineItem** - Individual scope line items with Xactimate codes
-- **ClaimActivity** - Audit log of claim actions
-- **PhotoAnalysis** - GPT-4 Vision results for uploaded photos
-- **DeltaItem** - Missing/incorrect items for supplement
+## IRC Codes in Knowledge Base
 
-## API Endpoints
-
-### Projects
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/projects` | GET/POST | List/create projects |
-| `/api/projects/[id]/activity` | GET | Activity log |
-| `/api/uploads` | POST | Upload files |
-| `/api/uploads/[id]` | PATCH/DELETE | Rename/delete |
-| `/api/ai/generate` | POST | Generate AI documents |
-| `/api/exports/[id]/materials.csv` | GET | Materials CSV |
-| `/api/exports/[id]/estimate.csv` | GET | Estimate CSV |
-
-### Claims
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/claims` | GET/POST | List/create claims |
-| `/api/claims/[id]` | GET/PATCH | Get/update claim |
-| `/api/claims/[id]/parse-scope` | POST | Parse carrier SOL PDF |
-| `/api/claims/[id]/analyze-photo` | GET/POST | Photo analysis |
-| `/api/claims/[id]/generate-deltas` | GET/POST | Delta detection |
-| `/api/claims/[id]/deltas/[deltaId]` | PATCH/DELETE | Update delta status |
-| `/api/claims/[id]/defense-notes` | GET/POST | Defense notes |
-| `/api/claims/[id]/supplement` | GET/POST | Supplement package |
-
-## Claim Workflow Stages
-
-1. **Intake** - Initial setup (1 day expected)
-2. **Scope Review** - Reviewing carrier scope (2 days)
-3. **Delta Analysis** - Finding missing items (3 days)
-4. **Supplement Pending** - Submitted to carrier (14 days)
-5. **Awaiting SOL** - Waiting for revised SOL (10 days)
-6. **Rebuttal** - Supplement denied, preparing response (5 days)
-7. **Build Scheduled** - Approved, construction scheduled (30 days)
-8. **Post Build** - Construction complete (5 days)
-9. **Invoicing** - Invoice submitted (14 days)
-10. **Depreciation Pending** - Awaiting depreciation recovery (30 days)
-11. **Completed** - Claim fully resolved
+| Code | Title | Common Use |
+|------|-------|------------|
+| R903.2.2 | Crickets & Saddles | Chimneys >30" wide |
+| R904.1 | Manufacturer Instructions | Starter course, general |
+| R905.2.1 | Sheathing Requirements | Decking replacement |
+| R905.2.7.1 | Ice Barrier | Ice & water shield |
+| R905.2.8.1 | Starter Course | Eaves requirement |
+| R905.2.8.2 | Valleys | Valley metal, IWS |
+| R905.2.8.3 | Step Flashing | Wall intersections |
+| R905.2.8.5 | Drip Edge | Eaves and rakes |
+| R806.2 | Ventilation | Ridge vent, NFA calc |
 
 ## Getting Started
 
@@ -164,11 +155,13 @@ cp .env.example .env.local
 **Required:**
 - `DATABASE_URL` - Neon PostgreSQL
 - `OPENAI_API_KEY` - OpenAI API key
+- `ANTHROPIC_API_KEY` - Anthropic API key (for Claude)
 - `BLOB_READ_WRITE_TOKEN` - Vercel Blob
 
 **Recommended:**
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`
 - `UPSTASH_VECTOR_REST_URL` / `UPSTASH_VECTOR_REST_TOKEN`
+- `GAMMA_API_KEY` - For presentation generation
 
 ### 3. Database Setup
 ```bash
@@ -194,12 +187,27 @@ npx prisma studio    # Database GUI
 npx prisma db push   # Push schema changes
 ```
 
-## Not Yet Implemented
+## Claim Workflow Stages
 
-- Authentication (Stack Auth planned, using TEMP_USER_ID)
-- Multi-tenant user isolation
-- Email notifications for claim status changes
-- Mobile app (currently responsive web)
+1. **Intake** - Initial setup (1 day)
+2. **Scope Review** - Review carrier scope (2 days)
+3. **Delta Analysis** - Find missing items (3 days)
+4. **Supplement Pending** - Submitted to carrier (14 days)
+5. **Awaiting SOL** - Waiting for revised SOL (10 days)
+6. **Rebuttal** - Preparing response (5 days)
+7. **Build Scheduled** - Construction scheduled (30 days)
+8. **Post Build** - Construction complete (5 days)
+9. **Invoicing** - Invoice submitted (14 days)
+10. **Depreciation Pending** - Awaiting recovery (30 days)
+11. **Completed** - Claim resolved
+
+## Coming Soon
+
+- [ ] Clerk authentication
+- [ ] Email tool for carrier/contractor communication
+- [ ] Carrier scope PDF auto-parsing on upload
+- [ ] Measurement report integration (EagleView/Hover)
+- [ ] Mobile app
 
 ## Deployment
 
