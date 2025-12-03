@@ -1,185 +1,183 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { CLAIM_STATUS_INFO, type ClaimStatus } from '@/lib/claims/schemas'
+import Link from "next/link";
+import { Card, CardContent, MetricCard, StatusBadge } from "@/components/ui";
+import { CLAIM_STATUS_INFO, type ClaimStatus } from "@/lib/claims/schemas";
 
 interface ClaimSummaryCardProps {
   claim: {
-    id: string
-    claimNumber: string | null
-    carrier: string | null
-    status: string
-    dateOfLoss: string | null
-    deductible: number | null
-  }
+    id: string;
+    claimNumber: string | null;
+    carrier: string | null;
+    status: string;
+    dateOfLoss: string | null;
+    deductible: number | null;
+  };
   summary: {
-    totalRCV: number
-    totalACV: number
-    totalDepreciation: number
-    deductible: number
-    netPayment: number
-    totalSquares: number | null
-    dollarPerSquare: number | null
-    lineItemCount: number
-  } | null
+    totalRCV: number;
+    totalACV: number;
+    totalDepreciation: number;
+    deductible: number;
+    netPayment: number;
+    totalSquares: number | null;
+    dollarPerSquare: number | null;
+    lineItemCount: number;
+  } | null;
   project: {
-    clientName: string
-    address: string
-  }
+    clientName: string;
+    address: string;
+  };
 }
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(value);
 }
 
 function formatDate(dateString: string | null): string {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  if (!dateString) return "Not set";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-export function ClaimSummaryCard({ claim, summary, project }: ClaimSummaryCardProps) {
+export function ClaimSummaryCard({ claim, summary }: ClaimSummaryCardProps) {
   const statusInfo = CLAIM_STATUS_INFO[claim.status as ClaimStatus] || {
     label: claim.status,
-    color: 'gray',
-    description: '',
-  }
+    color: "gray",
+    description: "",
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-3">
-              {project.clientName}
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${statusInfo.color}-100 text-${statusInfo.color}-800`}
-                style={{
-                  backgroundColor: `var(--${statusInfo.color}-100, #f3f4f6)`,
-                  color: `var(--${statusInfo.color}-800, #1f2937)`,
-                }}
-              >
-                {statusInfo.label}
-              </span>
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{project.address}</p>
-          </div>
-          {claim.claimNumber && (
-            <div className="text-right">
-              <p className="text-sm font-medium text-muted-foreground">Claim #</p>
-              <p className="text-sm font-mono">{claim.claimNumber}</p>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        {/* Key Metrics Grid */}
-        {summary ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {/* D$/SQ - The Key KPI */}
-            <div className="bg-primary/10 rounded-xl p-4 col-span-2 md:col-span-1">
-              <p className="text-xs font-medium text-primary uppercase tracking-wide">D$/SQ</p>
-              <p className="text-2xl font-bold text-primary">
-                {summary.dollarPerSquare 
+    <div className="space-y-4">
+      {/* Metrics Grid */}
+      {summary ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* D$/SQ - The Key KPI */}
+          <Card className="bg-primary-light border-primary/20">
+            <CardContent className="p-4">
+              <p className="text-xs font-medium text-primary uppercase tracking-wide mb-1">
+                D$/SQ
+              </p>
+              <p className="text-3xl font-bold font-display text-primary">
+                {summary.dollarPerSquare
                   ? `$${summary.dollarPerSquare.toFixed(0)}`
-                  : 'N/A'
-                }
+                  : "N/A"}
               </p>
               {summary.totalSquares && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-primary/70 mt-1">
                   {summary.totalSquares.toFixed(1)} squares
                 </p>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Total RCV */}
-            <div className="bg-muted/50 rounded-xl p-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">RCV</p>
-              <p className="text-xl font-semibold">{formatCurrency(summary.totalRCV)}</p>
-              <p className="text-xs text-muted-foreground">
+          {/* Total RCV */}
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                RCV
+              </p>
+              <p className="text-2xl font-bold font-display">
+                {formatCurrency(summary.totalRCV)}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
                 {summary.lineItemCount} line items
               </p>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Depreciation */}
-            <div className="bg-muted/50 rounded-xl p-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Depreciation</p>
-              <p className="text-xl font-semibold text-orange-600">
+          {/* Depreciation */}
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                Depreciation
+              </p>
+              <p className="text-2xl font-bold font-display text-warning-foreground">
                 -{formatCurrency(summary.totalDepreciation)}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {summary.totalRCV > 0 
+              <p className="text-sm text-muted-foreground mt-1">
+                {summary.totalRCV > 0
                   ? `${((summary.totalDepreciation / summary.totalRCV) * 100).toFixed(1)}%`
-                  : '0%'
-                }
+                  : "0%"}
               </p>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Net Payment */}
-            <div className="bg-green-50 rounded-xl p-4">
-              <p className="text-xs font-medium text-green-700 uppercase tracking-wide">Net Payment</p>
-              <p className="text-xl font-semibold text-green-700">
+          {/* Net Payment */}
+          <Card className="bg-success-light border-success/20">
+            <CardContent className="p-4">
+              <p className="text-xs font-medium text-success-foreground uppercase tracking-wide mb-1">
+                Net Payment
+              </p>
+              <p className="text-2xl font-bold font-display text-success-foreground">
                 {formatCurrency(summary.netPayment)}
               </p>
-              <p className="text-xs text-green-600">
-                After ${summary.deductible.toLocaleString()} deductible
+              <p className="text-sm text-success-foreground/70 mt-1">
+                After ${summary.deductible.toLocaleString()} ded.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card className="bg-muted/30">
+          <CardContent className="py-8 text-center">
+            <div className="w-12 h-12 rounded-xl bg-muted mx-auto mb-3 flex items-center justify-center">
+              <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p className="text-foreground font-medium">No carrier scope uploaded yet</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Upload a carrier scope PDF in the Scope tab to see claim metrics
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Claim Details */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                Carrier
+              </p>
+              <p className="font-medium text-foreground">
+                {claim.carrier || "Not specified"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                Date of Loss
+              </p>
+              <p className="font-medium text-foreground">{formatDate(claim.dateOfLoss)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                Deductible
+              </p>
+              <p className="font-medium text-foreground">
+                {claim.deductible ? formatCurrency(claim.deductible) : "Not set"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                Current Stage
+              </p>
+              <p className="font-medium text-foreground">
+                {statusInfo.description || statusInfo.label}
               </p>
             </div>
           </div>
-        ) : (
-          <div className="bg-muted/30 rounded-xl p-6 text-center mb-6">
-            <p className="text-muted-foreground">No carrier scope uploaded yet</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Upload a carrier scope PDF to see claim metrics
-            </p>
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        <div className="flex gap-2 mb-6">
-          <Link
-            href={`/claims/${claim.id}/checklist`}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-            Build Day Checklist
-          </Link>
-        </div>
-
-        {/* Claim Details */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">Carrier</p>
-            <p className="font-medium">{claim.carrier || 'Not specified'}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Date of Loss</p>
-            <p className="font-medium">{formatDate(claim.dateOfLoss)}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Deductible</p>
-            <p className="font-medium">
-              {claim.deductible ? formatCurrency(claim.deductible) : 'Not specified'}
-            </p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Status</p>
-            <p className="font-medium">{statusInfo.description || statusInfo.label}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

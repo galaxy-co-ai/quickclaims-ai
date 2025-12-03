@@ -12,6 +12,17 @@ export async function POST(request: NextRequest) {
     // Using temp user for development
     const userId = process.env.TEMP_USER_ID || 'dev-user-001'
     
+    // Ensure the development user exists (required for foreign key constraint)
+    await db.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
+        id: userId,
+        email: `${userId}@quickclaims.dev`,
+        name: 'Development User',
+      },
+    })
+    
     // Create project
     const project = await db.project.create({
       data: {
