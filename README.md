@@ -4,9 +4,26 @@ AI-powered insurance claim supplement platform for roofing contractors. Upload c
 
 **Last Updated:** December 3, 2025
 
-## ✨ What's New - AI Document Generation
+## ✨ What's New
 
-The AI assistant is now a domain expert in roofing supplement estimation. It can:
+### Conversation Persistence & History
+- **Conversations persist** - Navigate away and come back, your chat history is saved
+- **History panel** - View all past conversations with the AI
+- **New chat button** - Start fresh conversations anytime
+- **Delete conversations** - Remove old chats you no longer need
+
+### Project Editing
+- **Edit project cards** - Hover over any project to edit or delete
+- **Update details** - Change client name, address, project type, or status
+- **AI can update projects** - Just ask the assistant to fix project details
+
+### Clerk Authentication
+- **Secure sign-in/sign-up** - Powered by Clerk
+- **User-specific data** - All projects, claims, and docs isolated per user
+- **Automatic user sync** - Webhook keeps database in sync with Clerk
+
+### AI Document Generation
+The AI assistant is a domain expert in roofing supplement estimation. It can:
 
 - **Generate Delta Analysis Reports** - Compare carrier scope against IRC requirements
 - **Create Defense Notes** - 2-3 sentence notes with code citations, ready for Xactimate
@@ -24,6 +41,8 @@ All generated documents auto-save to the **AI Docs** tab of each project.
 - **Proactive Generation** - Suggests documents based on what you share
 - **Natural Conversation** - Just describe what you need in plain English
 - **Action-Oriented** - Creates documents directly, doesn't just explain how
+- **File Uploads** - Drag & drop photos and documents into the chat
+- **Persistent History** - Conversations saved across sessions
 
 ### Knowledge Base
 - **100+ Xactimate Codes** - Full pricing and descriptions
@@ -33,6 +52,7 @@ All generated documents auto-save to the **AI Docs** tab of each project.
 
 ### Core Platform
 - **Project Management** - iOS-style interface with cards and tabs
+- **Project Editing** - Edit or delete projects from the grid
 - **Document Upload** - Carrier scopes (PDF), photos, measurements
 - **Photo Analysis** - GPT-4 Vision detects components and damage
 - **Smart Organization** - AI tags and categorizes uploads
@@ -46,13 +66,20 @@ All generated documents auto-save to the **AI Docs** tab of each project.
 - **Supplement Builder** - Complete packages ready to submit
 - **Xactimate Export** - CSV compatible with Xactimate import
 
+### Authentication & Security
+- **Clerk Integration** - Secure sign-in with email/OAuth
+- **Data Isolation** - Each user sees only their own data
+- **Protected Routes** - Middleware protects all app routes
+- **Webhook Sync** - User data synced via secure webhooks
+
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router, Turbopack)
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS
 - **Database**: Neon PostgreSQL + Prisma ORM
 - **File Storage**: Vercel Blob
+- **Authentication**: Clerk
 - **AI**: 
   - OpenAI GPT-4o (chat, vision)
   - Anthropic Claude Sonnet (document generation)
@@ -68,23 +95,36 @@ quickclaims-ai/
 │   ├── api/
 │   │   ├── ai/
 │   │   │   ├── chat/                    # AI assistant endpoint
-│   │   │   └── generate/                # Legacy document generation
+│   │   │   ├── generate/                # Document generation
+│   │   │   └── upload/                  # AI chat file uploads
 │   │   ├── claims/[claimId]/
 │   │   │   ├── analyze-photo/           # GPT-4 Vision analysis
 │   │   │   ├── defense-notes/           # Defense note generation
 │   │   │   ├── generate-deltas/         # Delta detection engine
 │   │   │   └── parse-scope/             # Carrier scope parsing
+│   │   ├── conversations/               # Chat persistence
+│   │   │   ├── [id]/                    # Single conversation
+│   │   │   │   └── messages/            # Add messages
+│   │   │   └── active/                  # Get/create active convo
 │   │   ├── documents/                   # Document listing
 │   │   ├── exports/                     # CSV/PDF exports
 │   │   ├── photos/analyze/              # Batch photo analysis
-│   │   ├── projects/                    # Project CRUD
-│   │   └── uploads/                     # File uploads
+│   │   ├── projects/
+│   │   │   ├── [id]/                    # Project GET/PATCH/DELETE
+│   │   │   └── route.ts                 # Project list/create
+│   │   ├── uploads/                     # File uploads
+│   │   └── webhooks/clerk/              # Clerk user sync
 │   ├── dashboard/                       # AI chat interface
 │   ├── documents/                       # Documents list
 │   ├── projects/[id]/                   # Project detail (4 tabs)
-│   └── settings/                        # User settings
+│   ├── settings/                        # User settings
+│   ├── sign-in/                         # Clerk sign-in
+│   └── sign-up/                         # Clerk sign-up
 ├── components/
 │   ├── claims/                          # Claim UI components
+│   ├── features/                        # Feature modals
+│   │   ├── EditProjectModal.tsx         # Edit project dialog
+│   │   └── NewProjectModal.tsx          # Create project dialog
 │   ├── layout/                          # AppShell, Sidebar, MobileNav
 │   ├── project/                         # Project components
 │   └── ui/                              # Reusable primitives
@@ -101,17 +141,41 @@ quickclaims-ai/
 │   │   ├── executor.ts                  # Tool execution
 │   │   ├── openai.ts                    # GPT-4 integration
 │   │   └── tools.ts                     # AI tool definitions
+│   ├── auth.ts                          # Clerk auth utilities
 │   ├── claims/                          # Claim utilities
 │   └── validations/                     # Zod schemas
+├── middleware.ts                        # Clerk route protection
 ├── prisma/
 │   └── schema.prisma                    # Database schema
-└── README.md
+├── README.md                            # This file
+└── WARP.md                              # Project rules
 ```
+
+## Database Models
+
+| Model | Purpose |
+|-------|---------|
+| `User` | User accounts (synced with Clerk) |
+| `Project` | Roofing/restoration projects |
+| `Upload` | Files attached to projects |
+| `Document` | AI-generated documents |
+| `Claim` | Insurance claims |
+| `CarrierScope` | Parsed carrier scopes |
+| `LineItem` | Scope line items |
+| `DeltaItem` | Missing/underscoped items |
+| `PhotoAnalysis` | AI photo analysis results |
+| `ClaimActivity` | Claim timeline events |
+| `Conversation` | AI chat conversations |
+| `ChatMessage` | Individual chat messages |
 
 ## AI Tools Available
 
 | Tool | Description |
 |------|-------------|
+| `create_project` | Create new project |
+| `update_project` | Edit project details |
+| `list_projects` | Get user's projects |
+| `get_project_details` | Full project info |
 | `generate_delta_analysis` | Create delta report comparing scope to code requirements |
 | `generate_cover_letter` | Professional carrier submission email |
 | `generate_defense_notes` | Xactimate-ready notes with IRC citations |
@@ -121,8 +185,9 @@ quickclaims-ai/
 | `lookup_xactimate_code` | Look up code pricing and description |
 | `lookup_irc_code` | Get IRC requirements for components |
 | `analyze_photos` | AI vision analysis of project photos |
-| `create_project` | Create new project |
 | `create_claim` | Start insurance claim tracking |
+| `navigate_to` | Navigate user to app pages |
+| `export_document` | Export to PDF/CSV |
 
 ## IRC Codes in Knowledge Base
 
@@ -153,15 +218,18 @@ cp .env.example .env.local
 ```
 
 **Required:**
-- `DATABASE_URL` - Neon PostgreSQL
+- `DATABASE_URL` - Neon PostgreSQL connection string
 - `OPENAI_API_KEY` - OpenAI API key
 - `ANTHROPIC_API_KEY` - Anthropic API key (for Claude)
-- `BLOB_READ_WRITE_TOKEN` - Vercel Blob
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage token
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk publishable key
+- `CLERK_SECRET_KEY` - Clerk secret key
+- `CLERK_WEBHOOK_SECRET` - Clerk webhook signing secret
 
-**Recommended:**
-- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`
-- `UPSTASH_VECTOR_REST_URL` / `UPSTASH_VECTOR_REST_TOKEN`
-- `GAMMA_API_KEY` - For presentation generation
+**Optional:**
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` - Redis caching
+- `UPSTASH_VECTOR_REST_URL` / `UPSTASH_VECTOR_REST_TOKEN` - Vector search
+- `GAMMA_API_KEY` - Presentation generation
 
 ### 3. Database Setup
 ```bash
@@ -179,7 +247,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Development Commands
 
 ```bash
-npm run dev          # Development server
+npm run dev          # Development server (Turbopack)
 npm run build        # Production build
 npm run lint         # ESLint check
 npx tsc --noEmit     # TypeScript check
@@ -203,10 +271,10 @@ npx prisma db push   # Push schema changes
 
 ## Coming Soon
 
-- [ ] Clerk authentication
 - [ ] Email tool for carrier/contractor communication
 - [ ] Carrier scope PDF auto-parsing on upload
 - [ ] Measurement report integration (EagleView/Hover)
+- [ ] Settings persistence to database
 - [ ] Mobile app
 
 ## Deployment
