@@ -2,9 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { parseCarrierScope, calculateScopeMetrics, identifyMissingItems } from '@/lib/claims/scope-parser'
 import { extractScopeText } from '@/lib/extract/scope'
+import { requireAuthUserId } from '@/lib/auth'
 
 interface RouteParams {
   params: Promise<{ claimId: string }>
+}
+
+/**
+ * Verify claim belongs to user
+ */
+async function verifyClaimOwnership(claimId: string, userId: string) {
+  return db.claim.findFirst({
+    where: { id: claimId, project: { userId } },
+    include: { project: true },
+  })
 }
 
 /**
@@ -13,6 +24,7 @@ interface RouteParams {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
     const body = await request.json()
     const { uploadId } = body as { uploadId: string }
@@ -31,11 +43,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Get the claim and verify it exists
-    const claim = await db.claim.findUnique({
-      where: { id: claimId },
-      include: { project: true },
-    })
+    // Get the claim and verify ownership
+    const claim = await verifyClaimOwnership(claimId, userId)
 
     if (!claim) {
       return NextResponse.json(
@@ -185,7 +194,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     })
   } catch (error) {
-    console.error('Error parsing carrier scope:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to parse carrier scope' },
       { status: 500 }

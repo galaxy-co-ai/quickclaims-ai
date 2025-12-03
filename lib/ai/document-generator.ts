@@ -21,8 +21,6 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 })
 
-const TEMP_USER_ID = process.env.TEMP_USER_ID || 'dev-user-001'
-
 // Types for document generation
 export interface ProjectContext {
   projectId: string

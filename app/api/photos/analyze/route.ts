@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
+import { requireAuthUserId } from '@/lib/auth'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -33,12 +34,16 @@ export type PhotoTags = z.infer<typeof PhotoTagsSchema>
  */
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
     const body = await request.json()
     const { uploadId } = AnalyzeRequestSchema.parse(body)
 
-    // Get the upload record
-    const upload = await db.upload.findUnique({
-      where: { id: uploadId },
+    // Get the upload record and verify ownership
+    const upload = await db.upload.findFirst({
+      where: { 
+        id: uploadId,
+        project: { userId }
+      },
     })
 
     if (!upload) {
@@ -77,6 +82,9 @@ export async function POST(request: NextRequest) {
       analysis,
     })
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { error: 'Failed to analyze photo', details: errorMessage },
@@ -91,8 +99,19 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
     const body = await request.json()
     const { uploadIds, projectId } = body as { uploadIds: string[]; projectId: string }
+
+    // Verify project belongs to user if provided
+    if (projectId) {
+      const project = await db.project.findFirst({
+        where: { id: projectId, userId },
+      })
+      if (!project) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+    }
 
     if (!uploadIds || !Array.isArray(uploadIds) || uploadIds.length === 0) {
       return NextResponse.json(
@@ -101,11 +120,12 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Get all uploads that are images
+    // Get all uploads that are images and belong to user's projects
     const uploads = await db.upload.findMany({
       where: {
         id: { in: uploadIds },
         mimeType: { startsWith: 'image/' },
+        project: { userId },
       },
     })
 
@@ -153,6 +173,9 @@ export async function PUT(request: NextRequest) {
       failed: results.filter(r => !r.analysis).length,
     })
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { error: 'Failed to analyze photos', details: errorMessage },

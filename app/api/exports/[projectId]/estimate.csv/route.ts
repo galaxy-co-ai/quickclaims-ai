@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAuthUserId } from '@/lib/auth'
 
 const esc = (v: any) => {
   if (v == null) return ''
@@ -11,8 +12,17 @@ const esc = (v: any) => {
 const fmtUsd = (n?: number) => (n == null ? '' : `$${n.toFixed(2)}`)
 
 export async function GET(_: Request, { params }: any) {
-  const docs = await db.document.findMany({ where: { projectId: params.projectId, type: 'estimate' } })
-  if (!docs.length) return new NextResponse('No estimate', { status: 404 })
+  try {
+    const userId = await requireAuthUserId()
+    
+    // Verify project belongs to user
+    const project = await db.project.findFirst({
+      where: { id: params.projectId, userId },
+    })
+    if (!project) return new NextResponse('Not found', { status: 404 })
+    
+    const docs = await db.document.findMany({ where: { projectId: params.projectId, type: 'estimate' } })
+    if (!docs.length) return new NextResponse('No estimate', { status: 404 })
   const est = docs[0].content as any
   const items: any[] = est?.items ?? []
 
@@ -60,4 +70,10 @@ export async function GET(_: Request, { params }: any) {
 
   const csv = rows.join('\n')
   return new NextResponse(csv, { headers: { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="estimate.csv"' } })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+    return new NextResponse('Internal server error', { status: 500 })
+  }
 }

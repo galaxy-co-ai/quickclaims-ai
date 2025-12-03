@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateDeltas, PhotoAnalysisResult, generateDefenseNote } from '@/lib/claims/photo-analysis'
+import { requireAuthUserId } from '@/lib/auth'
+
+/**
+ * Verify claim belongs to user
+ */
+async function verifyClaimOwnership(claimId: string, userId: string) {
+  return db.claim.findFirst({
+    where: { id: claimId, project: { userId } },
+  })
+}
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ claimId: string }> }
 ) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
 
     // Get claim with all related data
     const claim = await db.claim.findUnique({
@@ -123,7 +140,9 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Error generating deltas:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -134,7 +153,14 @@ export async function GET(
   { params }: { params: Promise<{ claimId: string }> }
 ) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
 
     const deltas = await db.deltaItem.findMany({
       where: { claimId },
@@ -172,7 +198,9 @@ export async function GET(
     return NextResponse.json({ deltas, summary })
 
   } catch (error) {
-    console.error('Error fetching deltas:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

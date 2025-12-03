@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { CreateClaimSchema } from '@/lib/claims/schemas'
-
-const TEMP_USER_ID = 'temp-user-id' // TODO: Replace with auth
+import { requireAuthUserId } from '@/lib/auth'
 
 /**
  * GET /api/claims
@@ -10,10 +9,12 @@ const TEMP_USER_ID = 'temp-user-id' // TODO: Replace with auth
  */
 export async function GET() {
   try {
+    const userId = await requireAuthUserId()
+
     const claims = await db.claim.findMany({
       where: {
         project: {
-          userId: TEMP_USER_ID,
+          userId,
         },
       },
       include: {
@@ -47,7 +48,9 @@ export async function GET() {
 
     return NextResponse.json({ claims })
   } catch (error) {
-    console.error('Error fetching claims:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to fetch claims' },
       { status: 500 }
@@ -61,6 +64,7 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
     const body = await request.json()
     
     // Validate input
@@ -78,7 +82,7 @@ export async function POST(request: NextRequest) {
     const project = await db.project.findFirst({
       where: {
         id: input.projectId,
-        userId: TEMP_USER_ID,
+        userId,
       },
     })
 
@@ -142,7 +146,9 @@ export async function POST(request: NextRequest) {
       },
     }, { status: 201 })
   } catch (error) {
-    console.error('Error creating claim:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to create claim' },
       { status: 500 }

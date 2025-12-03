@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateProjectBrief, generateSupplementPresentation, isGammaConfigured } from '@/lib/ai/gamma'
+import { requireAuthUserId } from '@/lib/auth'
 
 interface RouteParams {
   params: Promise<{ projectId: string }>
+}
+
+/**
+ * Verify project belongs to user
+ */
+async function verifyProjectOwnership(projectId: string, userId: string) {
+  return db.project.findFirst({
+    where: { id: projectId, userId },
+  })
 }
 
 /**
@@ -12,7 +22,14 @@ interface RouteParams {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const userId = await requireAuthUserId()
     const { projectId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyProjectOwnership(projectId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
     const body = await request.json()
     const { type = 'brief' } = body as { type?: 'brief' | 'supplement' }
 
@@ -108,6 +125,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { error: 'Failed to generate presentation', details: errorMessage },
@@ -121,10 +141,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
  * Check presentation generation status or get available options
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const { projectId } = await params
+  try {
+    const userId = await requireAuthUserId()
+    const { projectId } = await params
 
-  // Get project to check what's available
-  const project = await db.project.findUnique({
+    // Verify ownership
+    const ownershipCheck = await verifyProjectOwnership(projectId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    // Get project to check what's available
+    const project = await db.project.findUnique({
     where: { id: projectId },
     select: {
       id: true,
@@ -152,4 +180,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       supplement: project.claim && project.claim.deltas.length > 0,
     },
   })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

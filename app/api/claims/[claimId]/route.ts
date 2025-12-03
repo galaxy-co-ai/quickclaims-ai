@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { UpdateClaimSchema } from '@/lib/claims/schemas'
+import { requireAuthUserId } from '@/lib/auth'
 
 interface RouteParams {
   params: Promise<{ claimId: string }>
+}
+
+/**
+ * Verify claim belongs to user
+ */
+async function verifyClaimOwnership(claimId: string, userId: string) {
+  const claim = await db.claim.findFirst({
+    where: { 
+      id: claimId,
+      project: { userId }
+    },
+  })
+  return claim
 }
 
 /**
@@ -12,7 +26,14 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
 
     const claim = await db.claim.findUnique({
       where: { id: claimId },
@@ -77,7 +98,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       summary,
     })
   } catch (error) {
-    console.error('Error fetching claim:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to fetch claim' },
       { status: 500 }
@@ -91,6 +114,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
     const body = await request.json()
 
@@ -105,10 +129,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const input = validationResult.data
 
-    // Get current claim
-    const currentClaim = await db.claim.findUnique({
-      where: { id: claimId },
-    })
+    // Get current claim and verify ownership
+    const currentClaim = await verifyClaimOwnership(claimId, userId)
 
     if (!currentClaim) {
       return NextResponse.json(
@@ -153,7 +175,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       claim,
     })
   } catch (error) {
-    console.error('Error updating claim:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to update claim' },
       { status: 500 }
@@ -167,7 +191,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
+
+    // Verify ownership before deleting
+    const claim = await verifyClaimOwnership(claimId, userId)
+    if (!claim) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
 
     await db.claim.delete({
       where: { id: claimId },
@@ -175,7 +206,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting claim:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to delete claim' },
       { status: 500 }

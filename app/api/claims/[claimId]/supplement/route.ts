@@ -9,6 +9,16 @@ import {
   type SupplementPackageData 
 } from '@/lib/claims/xactimate-export'
 import { generateProfessionalDefenseNote } from '@/lib/claims/irc-codes'
+import { requireAuthUserId } from '@/lib/auth'
+
+/**
+ * Verify claim belongs to user
+ */
+async function verifyClaimOwnership(claimId: string, userId: string) {
+  return db.claim.findFirst({
+    where: { id: claimId, project: { userId } },
+  })
+}
 
 // GET supplement package data or download
 export async function GET(
@@ -16,7 +26,14 @@ export async function GET(
   { params }: { params: Promise<{ claimId: string }> }
 ) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
     const { searchParams } = new URL(request.url)
     const format = searchParams.get('format') || 'json' // json, document, csv, photos
 
@@ -180,7 +197,9 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error generating supplement package:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -191,7 +210,14 @@ export async function POST(
   { params }: { params: Promise<{ claimId: string }> }
 ) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
     const body = await request.json()
     const { sentTo, sentDate, notes } = body
 
@@ -238,7 +264,9 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Error finalizing supplement:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

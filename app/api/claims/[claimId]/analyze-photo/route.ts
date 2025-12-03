@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { analyzePhoto, PhotoType, PHOTO_TYPES } from '@/lib/claims/photo-analysis'
 import { z } from 'zod'
+import { requireAuthUserId } from '@/lib/auth'
 
 const RequestSchema = z.object({
   uploadId: z.string(),
@@ -9,16 +10,32 @@ const RequestSchema = z.object({
   location: z.string().optional(),
 })
 
+/**
+ * Verify claim belongs to user
+ */
+async function verifyClaimOwnership(claimId: string, userId: string) {
+  return db.claim.findFirst({
+    where: { id: claimId, project: { userId } },
+  })
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ claimId: string }> }
 ) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
     const body = await request.json()
     const { uploadId, photoType, location } = RequestSchema.parse(body)
 
-    // Verify claim exists
+    // Verify claim exists and belongs to user
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
+
+    // Get claim with scope data
     const claim = await db.claim.findUnique({
       where: { id: claimId },
       include: {
@@ -129,7 +146,9 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Error in analyze-photo:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid request', details: error.issues }, { status: 400 })
@@ -144,7 +163,14 @@ export async function GET(
   { params }: { params: Promise<{ claimId: string }> }
 ) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
 
     const photoAnalyses = await db.photoAnalysis.findMany({
       where: { claimId },
@@ -157,7 +183,9 @@ export async function GET(
     return NextResponse.json({ photoAnalyses })
 
   } catch (error) {
-    console.error('Error fetching photo analyses:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

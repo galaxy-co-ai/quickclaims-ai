@@ -5,9 +5,11 @@ import { cacheGet, cacheSet, sha256, redis } from '@/lib/cache'
 import { ingestScope, searchScope } from '@/lib/vector'
 import { typeGuidance } from '@/lib/ai/guidance'
 import { logActivity } from '@/lib/activity'
+import { requireAuthUserId } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
     const body = await request.json()
     const { projectId, options } = body as { projectId: string; options?: GenerateOptions }
     
@@ -18,9 +20,9 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Get project data
-    const project = await db.project.findUnique({
-      where: { id: projectId },
+    // Get project data and verify ownership
+    const project = await db.project.findFirst({
+      where: { id: projectId, userId },
       include: { uploads: true },
     })
     
@@ -134,7 +136,9 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ success: true, documents: generatedDocs, cached: false })
   } catch (error) {
-    console.error('Error generating documents:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to generate documents' },
       { status: 500 }

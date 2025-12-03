@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateDefenseNote, generateSupplementLetter, generateRebuttal } from '@/lib/ai/anthropic'
+import { requireAuthUserId } from '@/lib/auth'
 
 interface RouteParams {
   params: Promise<{ claimId: string }>
+}
+
+/**
+ * Verify claim belongs to user
+ */
+async function verifyClaimOwnership(claimId: string, userId: string) {
+  return db.claim.findFirst({
+    where: { id: claimId, project: { userId } },
+  })
 }
 
 /**
@@ -12,7 +22,14 @@ interface RouteParams {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
     const body = await request.json()
     const { deltaId, type = 'defense' } = body as { deltaId?: string; type?: 'defense' | 'letter' | 'rebuttal' }
 
@@ -190,6 +207,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { error: 'Failed to generate defense notes', details: errorMessage },

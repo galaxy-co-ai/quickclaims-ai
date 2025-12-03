@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { requireAuthUserId } from '@/lib/auth'
 
 const UpdateSchema = z.object({
   status: z.enum(['identified', 'approved', 'denied', 'included']).optional(),
@@ -10,12 +11,28 @@ const UpdateSchema = z.object({
   estimatedRCV: z.number().optional(),
 })
 
+/**
+ * Verify claim belongs to user
+ */
+async function verifyClaimOwnership(claimId: string, userId: string) {
+  return db.claim.findFirst({
+    where: { id: claimId, project: { userId } },
+  })
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ claimId: string; deltaId: string }> }
 ) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId, deltaId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
     const body = await request.json()
     const updates = UpdateSchema.parse(body)
 
@@ -52,7 +69,9 @@ export async function PATCH(
     return NextResponse.json({ delta: updated })
 
   } catch (error) {
-    console.error('Error updating delta:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid request', details: error.issues }, { status: 400 })
@@ -67,7 +86,14 @@ export async function DELETE(
   { params }: { params: Promise<{ claimId: string; deltaId: string }> }
 ) {
   try {
+    const userId = await requireAuthUserId()
     const { claimId, deltaId } = await params
+
+    // Verify ownership
+    const ownershipCheck = await verifyClaimOwnership(claimId, userId)
+    if (!ownershipCheck) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+    }
 
     // Verify delta belongs to claim
     const existing = await db.deltaItem.findFirst({
@@ -85,7 +111,9 @@ export async function DELETE(
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Error deleting delta:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
