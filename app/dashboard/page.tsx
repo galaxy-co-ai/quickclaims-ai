@@ -12,11 +12,14 @@ import {
   Calculator, 
   HelpCircle, 
   Loader2,
-  Wrench,
   CheckCircle2,
   XCircle,
-  ExternalLink,
   ArrowRight,
+  Plus,
+  Paperclip,
+  Image as ImageIcon,
+  X,
+  File,
 } from "lucide-react";
 import { AppShell } from "@/components/layout";
 import { Button, toast } from "@/components/ui";
@@ -34,6 +37,13 @@ interface ActionPayload {
   payload: { url?: string; message?: string };
 }
 
+interface Attachment {
+  id: string;
+  file: File;
+  preview?: string;
+  type: 'image' | 'document';
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -41,6 +51,7 @@ interface Message {
   timestamp: Date;
   toolsUsed?: ToolUsed[];
   actions?: ActionPayload[];
+  attachments?: Attachment[];
 }
 
 const QUICK_ACTIONS = [
@@ -78,8 +89,12 @@ export default function DashboardPage() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -97,6 +112,80 @@ export default function DashboardPage() {
       inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + "px";
     }
   }, [input]);
+
+  // Handle file selection
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    if (!files) return;
+    
+    const newAttachments: Attachment[] = [];
+    Array.from(files).forEach((file) => {
+      const isImage = file.type.startsWith('image/');
+      const isDocument = file.type === 'application/pdf' || 
+                         file.type.includes('document') ||
+                         file.type.includes('text');
+      
+      if (!isImage && !isDocument) {
+        toast.error(`${file.name} is not a supported file type`);
+        return;
+      }
+
+      const attachment: Attachment = {
+        id: Math.random().toString(36).substr(2, 9),
+        file,
+        type: isImage ? 'image' : 'document',
+      };
+
+      // Create preview for images
+      if (isImage) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAttachments(prev => prev.map(a => 
+            a.id === attachment.id 
+              ? { ...a, preview: e.target?.result as string }
+              : a
+          ));
+        };
+        reader.readAsDataURL(file);
+      }
+
+      newAttachments.push(attachment);
+    });
+
+    setAttachments(prev => [...prev, ...newAttachments]);
+  }, []);
+
+  // Remove attachment
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  }, []);
+
+  // Drag and drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set isDragging to false if we're leaving the drop zone entirely
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleFileSelect(e.dataTransfer.files);
+  }, [handleFileSelect]);
 
   // Handle actions from AI response
   const handleActions = useCallback((actions: ActionPayload[]) => {
@@ -129,18 +218,31 @@ export default function DashboardPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && attachments.length === 0) || isLoading) return;
+
+    // Build message content with attachment info
+    let messageContent = input.trim();
+    if (attachments.length > 0) {
+      const attachmentDescriptions = attachments.map(a => 
+        `[Attached ${a.type}: ${a.file.name}]`
+      ).join('\n');
+      messageContent = messageContent 
+        ? `${messageContent}\n\n${attachmentDescriptions}`
+        : attachmentDescriptions;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: messageContent,
       timestamp: new Date(),
+      attachments: attachments.length > 0 ? [...attachments] : undefined,
     };
 
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput("");
+    setAttachments([]);
     setIsLoading(true);
 
     // Create abort controller for cancellation
@@ -253,6 +355,33 @@ export default function DashboardPage() {
 
               {/* Message Bubble */}
               <div className="flex flex-col gap-2 max-w-[85%]">
+                {/* Attachments preview for user messages */}
+                {message.attachments && message.attachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {message.attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="rounded-lg overflow-hidden border border-border bg-card"
+                      >
+                        {attachment.type === 'image' && attachment.preview ? (
+                          <img 
+                            src={attachment.preview} 
+                            alt={attachment.file.name}
+                            className="w-20 h-20 object-cover"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 flex flex-col items-center justify-center gap-1 p-2">
+                            <File className="w-6 h-6 text-muted-foreground" />
+                            <span className="text-[9px] text-muted-foreground text-center truncate w-full">
+                              {attachment.file.name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div
                   className={`rounded-2xl px-4 py-2.5 ${
                     message.role === "assistant"
@@ -346,21 +475,93 @@ export default function DashboardPage() {
           )}
 
           {/* Input Area */}
-          <form onSubmit={handleSubmit} className="relative">
+          <form 
+            onSubmit={handleSubmit} 
+            className="relative"
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            ref={formRef}
+          >
+            {/* Drag overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-primary/5 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-2 text-primary">
+                  <Paperclip className="w-8 h-8" />
+                  <span className="text-sm font-medium">Drop files here</span>
+                </div>
+              </div>
+            )}
+
+            {/* Attachment previews */}
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2 p-2 rounded-xl bg-muted/50 border border-border">
+                {attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="relative group rounded-lg overflow-hidden border border-border bg-card"
+                  >
+                    {attachment.type === 'image' && attachment.preview ? (
+                      <img 
+                        src={attachment.preview} 
+                        alt={attachment.file.name}
+                        className="w-16 h-16 object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 flex flex-col items-center justify-center gap-1 p-2">
+                        <File className="w-5 h-5 text-muted-foreground" />
+                        <span className="text-[8px] text-muted-foreground text-center truncate w-full">
+                          {attachment.file.name.slice(0, 10)}...
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(attachment.id)}
+                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card shadow-sm">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.txt"
+                className="hidden"
+                onChange={(e) => handleFileSelect(e.target.files)}
+              />
+              
+              {/* Attachment button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                aria-label="Attach file"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask me anything or tell me what to do..."
+                placeholder="Ask me anything or drop files here..."
                 className="flex-1 resize-none bg-transparent border-0 focus:ring-0 focus:outline-none text-sm placeholder:text-muted-foreground min-h-[32px] max-h-[80px] py-1"
                 rows={1}
               />
               <Button
                 type="submit"
                 size="sm"
-                disabled={!input.trim() || isLoading}
+                disabled={(!input.trim() && attachments.length === 0) || isLoading}
                 className="rounded-full h-7 w-7 p-0 shrink-0"
               >
                 {isLoading ? (
@@ -371,7 +572,7 @@ export default function DashboardPage() {
               </Button>
             </div>
             <p className="text-[10px] text-muted-foreground text-center mt-1">
-              I can create projects, generate docs, analyze photos, and more!
+              Drop photos or documents • I can create projects, generate docs, and more!
             </p>
           </form>
         </div>

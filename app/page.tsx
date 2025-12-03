@@ -130,11 +130,16 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-150">
                 <Link href="/dashboard">
-                  <Button size="xl" className="w-full sm:w-auto">
+                  <Button 
+                    size="xl" 
+                    className="w-full sm:w-auto"
+                    rightIcon={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    }
+                  >
                     Start Free Project
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
                   </Button>
                 </Link>
                 <Link href="/claims">
@@ -275,11 +280,13 @@ export default function Home() {
                 size="xl"
                 variant="secondary"
                 className="bg-white text-primary hover:bg-white/90"
+                rightIcon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                }
               >
                 Start Your First Claim
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
               </Button>
             </Link>
           </div>
