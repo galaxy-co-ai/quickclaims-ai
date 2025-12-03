@@ -17,9 +17,12 @@ import {
   ArrowRight,
   Plus,
   Paperclip,
-  Image as ImageIcon,
   X,
   File,
+  History,
+  MessageSquarePlus,
+  Trash2,
+  ChevronLeft,
 } from "lucide-react";
 import { AppShell } from "@/components/layout";
 import { Button, toast } from "@/components/ui";
@@ -54,6 +57,23 @@ interface Message {
   attachments?: Attachment[];
 }
 
+interface Conversation {
+  id: string;
+  title: string;
+  isActive: boolean;
+  updatedAt: string;
+  messages: Array<{
+    id: string;
+    role: string;
+    content: string;
+    toolsUsed?: unknown;
+    actions?: unknown;
+    attachments?: unknown;
+    createdAt: string;
+  }>;
+  _count?: { messages: number };
+}
+
 const QUICK_ACTIONS = [
   {
     icon: FolderPlus,
@@ -77,7 +97,7 @@ const QUICK_ACTIONS = [
   },
 ];
 
-const INITIAL_MESSAGE: Message = {
+const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
   content: "Hey! 👋 I'm your QuickClaims AI assistant. I can actually **do things** for you - not just answer questions.\n\nTry asking me to:\n- **Create a project** for a new client\n- **Generate documents** like estimates and materials lists\n- **Look up** Xactimate codes or IRC requirements\n- **Analyze photos** with AI vision\n- **Navigate** you anywhere in the app\n\nWhat would you like me to help with?",
@@ -86,11 +106,16 @@ const INITIAL_MESSAGE: Message = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(true);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +124,11 @@ export default function DashboardPage() {
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  // Load active conversation on mount
+  useEffect(() => {
+    loadActiveConversation();
   }, []);
 
   useEffect(() => {
@@ -112,6 +142,156 @@ export default function DashboardPage() {
       inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + "px";
     }
   }, [input]);
+
+  // Load active conversation
+  const loadActiveConversation = async () => {
+    try {
+      setIsLoadingConversation(true);
+      const response = await fetch("/api/conversations/active");
+      if (response.ok) {
+        const data = await response.json();
+        const conv = data.conversation as Conversation;
+        setConversationId(conv.id);
+        
+        if (conv.messages && conv.messages.length > 0) {
+          // Convert stored messages to Message format
+          const loadedMessages: Message[] = conv.messages.map((m) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: new Date(m.createdAt),
+            toolsUsed: m.toolsUsed as ToolUsed[] | undefined,
+            actions: m.actions as ActionPayload[] | undefined,
+          }));
+          setMessages([WELCOME_MESSAGE, ...loadedMessages]);
+        }
+      }
+    } catch {
+      // Silently fail - will show welcome message
+    } finally {
+      setIsLoadingConversation(false);
+    }
+  };
+
+  // Load conversation history
+  const loadHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+      const response = await fetch("/api/conversations");
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations || []);
+      }
+    } catch {
+      toast.error("Failed to load history");
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Switch to a specific conversation
+  const switchConversation = async (convId: string) => {
+    try {
+      setIsLoadingConversation(true);
+      
+      // Set as active
+      await fetch(`/api/conversations/${convId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: true }),
+      });
+
+      // Load the conversation
+      const response = await fetch(`/api/conversations/${convId}`);
+      if (response.ok) {
+        const data = await response.json();
+        const conv = data.conversation as Conversation;
+        setConversationId(conv.id);
+        
+        if (conv.messages && conv.messages.length > 0) {
+          const loadedMessages: Message[] = conv.messages.map((m) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: new Date(m.createdAt),
+            toolsUsed: m.toolsUsed as ToolUsed[] | undefined,
+            actions: m.actions as ActionPayload[] | undefined,
+          }));
+          setMessages([WELCOME_MESSAGE, ...loadedMessages]);
+        } else {
+          setMessages([WELCOME_MESSAGE]);
+        }
+      }
+      setShowHistory(false);
+    } catch {
+      toast.error("Failed to switch conversation");
+    } finally {
+      setIsLoadingConversation(false);
+    }
+  };
+
+  // Start a new conversation
+  const startNewConversation = async () => {
+    try {
+      setIsLoadingConversation(true);
+      const response = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setConversationId(data.conversation.id);
+        setMessages([WELCOME_MESSAGE]);
+        setShowHistory(false);
+        toast.success("Started new conversation");
+      }
+    } catch {
+      toast.error("Failed to start new conversation");
+    } finally {
+      setIsLoadingConversation(false);
+    }
+  };
+
+  // Delete a conversation
+  const deleteConversation = async (convId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Delete this conversation?")) return;
+    
+    try {
+      await fetch(`/api/conversations/${convId}`, { method: "DELETE" });
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+      
+      // If deleting the current conversation, start a new one
+      if (convId === conversationId) {
+        await startNewConversation();
+      }
+      toast.success("Conversation deleted");
+    } catch {
+      toast.error("Failed to delete conversation");
+    }
+  };
+
+  // Save a message to the current conversation
+  const saveMessage = async (message: Message) => {
+    if (!conversationId) return;
+    
+    try {
+      await fetch(`/api/conversations/${conversationId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: message.role,
+          content: message.content,
+          toolsUsed: message.toolsUsed,
+          actions: message.actions,
+        }),
+      });
+    } catch {
+      // Silent fail - message is already in local state
+    }
+  };
 
   // Handle file selection
   const handleFileSelect = useCallback((files: FileList | null) => {
@@ -135,7 +315,6 @@ export default function DashboardPage() {
         type: isImage ? 'image' : 'document',
       };
 
-      // Create preview for images
       if (isImage) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -154,12 +333,10 @@ export default function DashboardPage() {
     setAttachments(prev => [...prev, ...newAttachments]);
   }, []);
 
-  // Remove attachment
   const removeAttachment = useCallback((id: string) => {
     setAttachments(prev => prev.filter(a => a.id !== id));
   }, []);
 
-  // Drag and drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -169,7 +346,6 @@ export default function DashboardPage() {
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set isDragging to false if we're leaving the drop zone entirely
     if (e.currentTarget === e.target) {
       setIsDragging(false);
     }
@@ -187,13 +363,11 @@ export default function DashboardPage() {
     handleFileSelect(e.dataTransfer.files);
   }, [handleFileSelect]);
 
-  // Handle actions from AI response
   const handleActions = useCallback((actions: ActionPayload[]) => {
     for (const action of actions) {
       switch (action.type) {
         case 'navigate':
           if (action.payload.url) {
-            // Delay navigation slightly so user sees the response
             setTimeout(() => {
               router.push(action.payload.url!);
             }, 1500);
@@ -225,7 +399,6 @@ export default function DashboardPage() {
     setAttachments([]);
     setIsLoading(true);
 
-    // Create abort controller for cancellation
     abortControllerRef.current = new AbortController();
 
     try {
@@ -269,6 +442,9 @@ export default function DashboardPage() {
 
       const newMessages = [...messages, userMessage];
       setMessages(newMessages);
+      
+      // Save user message
+      await saveMessage(userMessage);
 
       // Call the AI API with function calling
       const response = await fetch("/api/ai/chat", {
@@ -288,7 +464,6 @@ export default function DashboardPage() {
 
       const data = await response.json();
       
-      // Create assistant message with tools info
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -299,8 +474,10 @@ export default function DashboardPage() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      
+      // Save assistant message
+      await saveMessage(assistantMessage);
 
-      // Execute any actions
       if (data.actions && data.actions.length > 0) {
         handleActions(data.actions);
       }
@@ -336,12 +513,89 @@ export default function DashboardPage() {
     }
   };
 
+  // History panel
+  if (showHistory) {
+    return (
+      <AppShell mobileTitle="Chat History" fullHeight>
+        <div className="fixed inset-0 top-[var(--header-height)] bottom-[var(--mobile-nav-height)] lg:bottom-0 lg:left-[var(--sidebar-width)] flex flex-col bg-background">
+          {/* Header */}
+          <div className="shrink-0 px-4 py-3 border-b border-border flex items-center gap-3">
+            <button
+              onClick={() => setShowHistory(false)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"
+              aria-label="Back to chat"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-semibold">Chat History</h1>
+            <div className="flex-1" />
+            <Button
+              size="sm"
+              onClick={startNewConversation}
+              className="gap-1.5"
+            >
+              <MessageSquarePlus className="w-4 h-4" />
+              New Chat
+            </Button>
+          </div>
+
+          {/* History List */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {isLoadingHistory ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No conversations yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => switchConversation(conv.id)}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors group ${
+                      conv.id === conversationId
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{conv.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {conv._count?.messages || 0} messages • {new Date(conv.updatedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => deleteConversation(conv.id, e)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                        aria-label="Delete conversation"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell mobileTitle="AI Assistant" fullHeight>
       <div className="fixed inset-0 top-[var(--header-height)] bottom-[var(--mobile-nav-height)] lg:bottom-0 lg:left-[var(--sidebar-width)] flex flex-col">
         {/* Header - hidden on mobile since it's in the mobile nav */}
-        <div className="shrink-0 px-4 pt-4 pb-2 hidden lg:block">
-          <div className="flex items-center gap-2.5">
+        <div className="shrink-0 px-4 pt-4 pb-2 hidden lg:flex items-center gap-2">
+          <div className="flex items-center gap-2.5 flex-1">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
@@ -350,111 +604,159 @@ export default function DashboardPage() {
               <p className="text-[11px] text-muted-foreground">Your powerful claims copilot</p>
             </div>
           </div>
+          
+          {/* Action buttons */}
+          <button
+            onClick={() => {
+              setShowHistory(true);
+              loadHistory();
+            }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="View history"
+            title="View history"
+          >
+            <History className="w-4 h-4" />
+          </button>
+          <button
+            onClick={startNewConversation}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="New conversation"
+            title="New conversation"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Mobile action buttons */}
+        <div className="shrink-0 px-4 pt-2 pb-1 flex lg:hidden items-center justify-end gap-1">
+          <button
+            onClick={() => {
+              setShowHistory(true);
+              loadHistory();
+            }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="View history"
+          >
+            <History className="w-4 h-4" />
+          </button>
+          <button
+            onClick={startNewConversation}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="New conversation"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto px-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
-            >
-              {/* Avatar */}
+          {isLoadingConversation ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            messages.map((message) => (
               <div
-                className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                  message.role === "assistant"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground"
-                }`}
+                key={message.id}
+                className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
               >
-                {message.role === "assistant" ? (
-                  <Bot className="w-4 h-4" />
-                ) : (
-                  <User className="w-4 h-4" />
-                )}
-              </div>
-
-              {/* Message Bubble */}
-              <div className="flex flex-col gap-2 max-w-[85%]">
-                {/* Attachments preview for user messages */}
-                {message.attachments && message.attachments.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {message.attachments.map((attachment) => (
-                      <div
-                        key={attachment.id}
-                        className="rounded-lg overflow-hidden border border-border bg-card"
-                      >
-                        {attachment.type === 'image' && attachment.preview ? (
-                          <img 
-                            src={attachment.preview} 
-                            alt={attachment.file.name}
-                            className="w-20 h-20 object-cover"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 flex flex-col items-center justify-center gap-1 p-2">
-                            <File className="w-6 h-6 text-muted-foreground" />
-                            <span className="text-[9px] text-muted-foreground text-center truncate w-full">
-                              {attachment.file.name}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
+                {/* Avatar */}
                 <div
-                  className={`rounded-2xl px-4 py-2.5 ${
+                  className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
                     message.role === "assistant"
-                      ? "bg-card border border-border text-foreground"
-                      : "bg-primary text-primary-foreground"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:text-inherit max-w-none">
-                    <MessageContent content={message.content} />
-                  </div>
-                  <p
-                    className={`text-[10px] mt-1.5 ${
-                      message.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/70"
-                    }`}
-                  >
-                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </p>
+                  {message.role === "assistant" ? (
+                    <Bot className="w-4 h-4" />
+                  ) : (
+                    <User className="w-4 h-4" />
+                  )}
                 </div>
 
-                {/* Tools Used Display */}
-                {message.toolsUsed && message.toolsUsed.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {message.toolsUsed.map((tool, index) => (
-                      <div
-                        key={index}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
-                          tool.success
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                        }`}
-                      >
-                        {tool.success ? (
-                          <CheckCircle2 className="w-3 h-3" />
-                        ) : (
-                          <XCircle className="w-3 h-3" />
-                        )}
-                        {tool.description}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Message Bubble */}
+                <div className="flex flex-col gap-2 max-w-[85%]">
+                  {/* Attachments preview for user messages */}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {message.attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="rounded-lg overflow-hidden border border-border bg-card"
+                        >
+                          {attachment.type === 'image' && attachment.preview ? (
+                            <img 
+                              src={attachment.preview} 
+                              alt={attachment.file.name}
+                              className="w-20 h-20 object-cover"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 flex flex-col items-center justify-center gap-1 p-2">
+                              <File className="w-6 h-6 text-muted-foreground" />
+                              <span className="text-[9px] text-muted-foreground text-center truncate w-full">
+                                {attachment.file.name}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                {/* Navigation indicator */}
-                {message.actions && message.actions.some(a => a.type === 'navigate') && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[11px] font-medium animate-pulse">
-                    <ArrowRight className="w-3 h-3" />
-                    Navigating...
+                  <div
+                    className={`rounded-2xl px-4 py-2.5 ${
+                      message.role === "assistant"
+                        ? "bg-card border border-border text-foreground"
+                        : "bg-primary text-primary-foreground"
+                    }`}
+                  >
+                    <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:text-inherit max-w-none">
+                      <MessageContent content={message.content} />
+                    </div>
+                    <p
+                      className={`text-[10px] mt-1.5 ${
+                        message.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/70"
+                      }`}
+                    >
+                      {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </p>
                   </div>
-                )}
+
+                  {/* Tools Used Display */}
+                  {message.toolsUsed && message.toolsUsed.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {message.toolsUsed.map((tool, index) => (
+                        <div
+                          key={index}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
+                            tool.success
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          }`}
+                        >
+                          {tool.success ? (
+                            <CheckCircle2 className="w-3 h-3" />
+                          ) : (
+                            <XCircle className="w-3 h-3" />
+                          )}
+                          {tool.description}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Navigation indicator */}
+                  {message.actions && message.actions.some(a => a.type === 'navigate') && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[11px] font-medium animate-pulse">
+                      <ArrowRight className="w-3 h-3" />
+                      Navigating...
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
 
           {/* Loading indicator */}
           {isLoading && (
@@ -624,7 +926,6 @@ function MessageContent({ content }: { content: string }) {
     };
 
     const parseInline = (text: string): React.ReactNode => {
-      // Handle bold, code, and emojis
       const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
       return parts.map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
@@ -644,7 +945,6 @@ function MessageContent({ content }: { content: string }) {
     lines.forEach((line, index) => {
       const trimmed = line.trim();
       
-      // Check for bullet points
       if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
         listItems.push(trimmed.slice(2));
       } else {

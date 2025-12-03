@@ -78,6 +78,41 @@ export const AI_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'update_project',
+      description: 'Update an existing project\'s details like client name, address, or project type.',
+      parameters: {
+        type: 'object',
+        properties: {
+          projectId: {
+            type: 'string',
+            description: 'The ID of the project to update',
+          },
+          clientName: {
+            type: 'string',
+            description: 'New client name (optional)',
+          },
+          address: {
+            type: 'string',
+            description: 'New property address (optional)',
+          },
+          projectType: {
+            type: 'string',
+            enum: ['Roof Replacement', 'Roof Repair', 'Storm Damage', 'Hail Damage', 'Wind Damage', 'Insurance Claim', 'General Restoration'],
+            description: 'New project type (optional)',
+          },
+          status: {
+            type: 'string',
+            enum: ['created', 'analyzing', 'ready', 'in-progress', 'completed'],
+            description: 'New project status (optional)',
+          },
+        },
+        required: ['projectId'],
+      },
+    },
+  },
 
   // ==========================================
   // DOCUMENT GENERATION (AI-Powered)
@@ -376,6 +411,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   create_project: 'Creating a new project',
   list_projects: 'Getting your projects',
   get_project_details: 'Loading project details',
+  update_project: 'Updating project details',
   
   // Document generation (AI-powered)
   generate_delta_analysis: 'Generating Delta Analysis Report',

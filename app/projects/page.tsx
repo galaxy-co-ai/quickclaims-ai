@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { FolderOpen, Plus, MapPin, FileText, Upload, Clock } from "lucide-react";
+import { FolderOpen, Plus, MapPin, FileText, Upload, Clock, Pencil, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout";
-import { Card, Badge, Button } from "@/components/ui";
+import { Card, Badge, Button, toast } from "@/components/ui";
 import { NewProjectModal } from "@/components/features/NewProjectModal";
+import { EditProjectModal } from "@/components/features/EditProjectModal";
 
 interface Project {
   id: string;
@@ -52,23 +53,58 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   useEffect(() => {
-    async function fetchProjects() {
-      try {
-        const response = await fetch("/api/projects");
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch projects:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchProjects();
   }, []);
+
+  async function fetchProjects() {
+    try {
+      const response = await fetch("/api/projects");
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
+      }
+    } catch {
+      toast.error("Failed to fetch projects");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleEditProject = (e: React.MouseEvent, project: Project) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingProject(project);
+  };
+
+  const handleProjectUpdated = (updatedProject: { id: string; clientName: string; address: string; projectType: string; status: string }) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === updatedProject.id ? { ...p, ...updatedProject } : p))
+    );
+  };
+
+  const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+      if (response.ok) {
+        setProjects((prev) => prev.filter((p) => p.id !== projectId));
+        toast.success("Project deleted");
+      } else {
+        throw new Error("Failed to delete");
+      }
+    } catch {
+      toast.error("Failed to delete project");
+    }
+  };
 
   const totalUploads = projects.reduce((sum, p) => sum + p._count.uploads, 0);
   const totalDocs = projects.reduce((sum, p) => sum + p._count.documents, 0);
@@ -149,8 +185,28 @@ export default function ProjectsPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
               <Link key={project.id} href={`/projects/${project.id}`}>
-                <Card className="h-full hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer group">
-                  <div className="flex items-start justify-between gap-2 mb-3">
+                <Card className="h-full hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer group relative">
+                  {/* Action buttons */}
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => handleEditProject(e, project)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center bg-background/80 backdrop-blur-sm border border-border hover:bg-muted hover:border-primary/50 transition-colors"
+                      aria-label="Edit project"
+                      title="Edit project"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteProject(e, project.id)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center bg-background/80 backdrop-blur-sm border border-border hover:bg-destructive/10 hover:border-destructive/50 hover:text-destructive transition-colors"
+                      aria-label="Delete project"
+                      title="Delete project"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-2 mb-3 pr-16">
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                         {project.clientName}
@@ -188,6 +244,14 @@ export default function ProjectsPage() {
 
       {/* New Project Modal */}
       <NewProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      {/* Edit Project Modal */}
+      <EditProjectModal
+        project={editingProject}
+        isOpen={!!editingProject}
+        onClose={() => setEditingProject(null)}
+        onSaved={handleProjectUpdated}
+      />
     </AppShell>
   );
 }

@@ -24,9 +24,51 @@ model User {
   // Subscription/plan
   plan String @default("free") // free, pro, enterprise
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  projects  Project[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  projects      Project[]
+  conversations Conversation[]
+}
+
+// ============================================
+// AI Chat Conversations
+// ============================================
+
+model Conversation {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String   @default("New Conversation")
+  isActive  Boolean  @default(true) // Currently active conversation
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@index([userId, isActive])
+}
+
+model ChatMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  role      String // "user" | "assistant"
+  content   String @db.Text
+  
+  // Tool usage metadata
+  toolsUsed Json? // Array of tools used
+  actions   Json? // Actions performed
+
+  // Attachments
+  attachments Json? // Array of attachment info
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
 }
 
 model Project {

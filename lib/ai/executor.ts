@@ -72,6 +72,15 @@ export async function executeToolCall(
           projectName?: string
         })
 
+      case 'update_project':
+        return await updateProject(args as {
+          projectId: string
+          clientName?: string
+          address?: string
+          projectType?: string
+          status?: string
+        })
+
       // ==========================================
       // DOCUMENT GENERATION (AI-Powered)
       // ==========================================
@@ -239,6 +248,52 @@ async function listProjects(args: {
     success: true,
     message: `Found ${projects.length} project${projects.length === 1 ? '' : 's'}`,
     data: { projects: projectList },
+  }
+}
+
+async function updateProject(args: {
+  projectId: string
+  clientName?: string
+  address?: string
+  projectType?: string
+  status?: string
+}): Promise<ToolResult> {
+  // Verify project belongs to user
+  const existingProject = await db.project.findFirst({
+    where: { id: args.projectId, userId: getUserId() },
+  })
+
+  if (!existingProject) {
+    return { success: false, message: 'Project not found' }
+  }
+
+  const updates: Record<string, string> = {}
+  if (args.clientName) updates.clientName = args.clientName
+  if (args.address) updates.address = args.address
+  if (args.projectType) updates.projectType = args.projectType
+  if (args.status) updates.status = args.status
+
+  if (Object.keys(updates).length === 0) {
+    return { success: false, message: 'No updates provided' }
+  }
+
+  const project = await db.project.update({
+    where: { id: args.projectId },
+    data: updates,
+  })
+
+  const changesList = Object.keys(updates).map(k => k.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ')
+
+  return {
+    success: true,
+    message: `Updated **${project.clientName}**'s project (changed ${changesList})`,
+    data: {
+      projectId: project.id,
+      clientName: project.clientName,
+      address: project.address,
+      projectType: project.projectType,
+      status: project.status,
+    },
   }
 }
 
