@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { UserButton, useUser } from "@clerk/nextjs";
 
 interface NavItem {
   href: string;
@@ -71,25 +72,14 @@ interface SidebarProps {
 export function Sidebar({ className = "" }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const { user, isLoaded } = useUser();
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   };
 
-  const isSettingsActive = pathname.startsWith("/settings");
-
   return (
-    <>
-      {/* User menu backdrop */}
-      {showUserMenu && (
-        <div 
-          className="hidden lg:block fixed inset-0 z-30"
-          onClick={() => setShowUserMenu(false)}
-        />
-      )}
-
       <aside
         className={`
           hidden lg:flex flex-col
@@ -187,102 +177,53 @@ export function Sidebar({ className = "" }: SidebarProps) {
         </nav>
 
         {/* User Profile Section */}
-        <div className="relative p-2 border-t border-border">
-          {/* User dropdown menu */}
-          {showUserMenu && !collapsed && (
-            <div className="absolute bottom-full left-2 right-2 mb-2 py-1.5 rounded-xl bg-card border border-border shadow-lg z-50">
-              <div className="px-3 py-2 border-b border-border">
-                <p className="text-xs font-medium text-foreground truncate">My Account</p>
-                <p className="text-[10px] text-muted-foreground truncate">user@example.com</p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowUserMenu(false);
-                  // TODO: Wire to Clerk signOut
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Sign Out
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className={`
-              flex items-center gap-2.5 w-full px-2 py-2 rounded-lg
-              transition-all duration-150
-              ${isSettingsActive || showUserMenu
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }
-            `}
-            aria-label="User menu"
-            aria-expanded={showUserMenu}
-          >
-            {/* Avatar placeholder - will be replaced with Clerk UserButton */}
-            <div className={`
-              w-7 h-7 rounded-full flex items-center justify-center shrink-0
-              ${isSettingsActive || showUserMenu 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-muted text-muted-foreground"
-              }
-            `}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            {!collapsed && (
+        <div className="p-2 border-t border-border">
+          <div className={`
+            flex items-center gap-2.5 px-2 py-2 rounded-lg
+            ${collapsed ? "justify-center" : ""}
+          `}>
+            {/* Clerk UserButton */}
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "w-7 h-7",
+                  userButtonPopoverCard: "shadow-lg border border-border",
+                  userButtonPopoverActionButton: "text-foreground hover:bg-muted",
+                  userButtonPopoverActionButtonText: "text-sm",
+                  userButtonPopoverFooter: "hidden",
+                }
+              }}
+              afterSignOutUrl="/"
+            />
+            {!collapsed && isLoaded && user && (
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-xs font-medium truncate">User Name</p>
-                <p className="text-[10px] text-muted-foreground truncate">Free Plan</p>
+                <p className="text-xs font-medium truncate text-foreground">
+                  {user.firstName || user.username || 'User'}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {user.primaryEmailAddress?.emailAddress || 'Free Plan'}
+                </p>
               </div>
             )}
-            {!collapsed && (
-              <svg 
-                className={`w-4 h-4 text-muted-foreground transition-transform ${showUserMenu ? "rotate-180" : ""}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 15l7-7 7 7" />
-              </svg>
-            )}
-          </button>
-
-          {/* Collapse toggle - below user in collapsed mode */}
-          {collapsed && (
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="flex items-center justify-center w-full mt-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Expand sidebar"
-            >
-              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {/* Collapse toggle - shown when not collapsed */}
-        {!collapsed && (
-          <div className="px-2 pb-2">
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="flex items-center justify-center w-full p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Collapse sidebar"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            </button>
           </div>
-        )}
+
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex items-center justify-center w-full mt-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <svg 
+              className={`w-4 h-4 ${collapsed ? "rotate-180" : ""}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
       </aside>
-    </>
   );
 }
 
