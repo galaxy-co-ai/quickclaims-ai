@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
         tags: analysis.tags,
         category: analysis.category,
         description: analysis.description,
-        aiAnalysis: analysis as unknown as Record<string, unknown>,
+        aiAnalysis: analysis as unknown as Prisma.InputJsonValue,
         aiAnalyzedAt: new Date(),
       },
     })
@@ -126,7 +127,7 @@ export async function PUT(request: NextRequest) {
                 tags: analysis.tags,
                 category: analysis.category,
                 description: analysis.description,
-                aiAnalysis: analysis as unknown as Record<string, unknown>,
+                aiAnalysis: analysis as unknown as Prisma.InputJsonValue,
                 aiAnalyzedAt: new Date(),
               },
             })
