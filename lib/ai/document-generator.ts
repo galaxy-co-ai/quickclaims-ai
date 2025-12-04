@@ -129,7 +129,7 @@ Generate a complete, professional Delta Analysis Report following the template s
 Format in clean markdown. Be specific with quantities based on available measurements. Use code citations throughout.`
 
   const response = await getAnthropicClient().messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-3-5-haiku-20241022',
     max_tokens: 4000,
     messages: [{ role: 'user', content: prompt }]
   })
@@ -152,7 +152,7 @@ Format in clean markdown. Be specific with quantities based on available measure
       generatedAt: new Date().toISOString()
     },
     projectId: context.projectId,
-    generatedBy: 'claude-sonnet-4-20250514'
+    generatedBy: 'claude-3-5-haiku-20241022'
   }
 }
 
@@ -195,7 +195,7 @@ Generate a professional cover letter/email that:
 Keep it to about 200-300 words. Construction-focused - no policy discussion.`
 
   const response = await getAnthropicClient().messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-3-5-haiku-20241022',
     max_tokens: 1500,
     messages: [{ role: 'user', content: prompt }]
   })
@@ -214,7 +214,7 @@ Keep it to about 200-300 words. Construction-focused - no policy discussion.`
       generatedAt: new Date().toISOString()
     },
     projectId: context.projectId,
-    generatedBy: 'claude-sonnet-4-20250514'
+    generatedBy: 'claude-3-5-haiku-20241022'
   }
 }
 
@@ -259,7 +259,7 @@ Generate complete, copy-ready defense notes for EACH item above. Each note shoul
 Format as a markdown document with each item as a section. Include the Xactimate code and quantity after each item header.`
 
   const response = await getAnthropicClient().messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-3-5-haiku-20241022',
     max_tokens: 3000,
     messages: [{ role: 'user', content: prompt }]
   })
@@ -280,7 +280,7 @@ Format as a markdown document with each item as a section. Include the Xactimate
       generatedAt: new Date().toISOString()
     },
     projectId: context.projectId,
-    generatedBy: 'claude-sonnet-4-20250514'
+    generatedBy: 'claude-3-5-haiku-20241022'
   }
 }
 
@@ -344,7 +344,7 @@ Generate a comprehensive, professional Supplement Letter that includes:
 This should be a complete, ready-to-submit document. Be specific with quantities and calculations.`
 
   const response = await getAnthropicClient().messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-3-5-haiku-20241022',
     max_tokens: 6000,
     messages: [{ role: 'user', content: prompt }]
   })
@@ -366,7 +366,7 @@ This should be a complete, ready-to-submit document. Be specific with quantities
       generatedAt: new Date().toISOString()
     },
     projectId: context.projectId,
-    generatedBy: 'claude-sonnet-4-20250514'
+    generatedBy: 'claude-3-5-haiku-20241022'
   }
 }
 
@@ -415,7 +415,7 @@ Generate a professional rebuttal that:
 The response should be ready to send as-is.`
 
   const response = await getAnthropicClient().messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-3-5-haiku-20241022',
     max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }]
   })
@@ -433,7 +433,7 @@ The response should be ready to send as-is.`
       generatedAt: new Date().toISOString()
     },
     projectId: context.projectId,
-    generatedBy: 'claude-sonnet-4-20250514'
+    generatedBy: 'claude-3-5-haiku-20241022'
   }
 }
 
@@ -464,7 +464,7 @@ Generate a clean, professional Project Brief in markdown format with:
 Keep it concise - one page max.`
 
   const response = await getAnthropicClient().messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-3-5-haiku-20241022',
     max_tokens: 1500,
     messages: [{ role: 'user', content: prompt }]
   })
@@ -482,7 +482,7 @@ Keep it concise - one page max.`
       generatedAt: new Date().toISOString()
     },
     projectId: context.projectId,
-    generatedBy: 'claude-sonnet-4-20250514'
+    generatedBy: 'claude-3-5-haiku-20241022'
   }
 }
 

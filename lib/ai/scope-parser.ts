@@ -351,7 +351,7 @@ Important:
 - Extract FULL property address including city, state, ZIP`
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini', // Use mini for faster parsing (3-5x faster, still accurate for extraction)
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
