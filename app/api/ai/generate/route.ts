@@ -10,6 +10,12 @@ import { requireAuthUserId } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     const userId = await requireAuthUserId()
+    
+    // Check rate limit
+    const { checkRateLimit, aiGenerateLimiter } = await import('@/lib/rate-limit')
+    const rateLimitResponse = await checkRateLimit(aiGenerateLimiter, userId)
+    if (rateLimitResponse) return rateLimitResponse
+    
     const body = await request.json()
     const { projectId, options } = body as { projectId: string; options?: GenerateOptions }
     

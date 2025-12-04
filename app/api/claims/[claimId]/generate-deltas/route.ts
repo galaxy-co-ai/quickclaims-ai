@@ -19,6 +19,12 @@ export async function POST(
 ) {
   try {
     const userId = await requireAuthUserId()
+    
+    // Check rate limit for expensive operations
+    const { checkRateLimit, expensiveOpLimiter } = await import('@/lib/rate-limit')
+    const rateLimitResponse = await checkRateLimit(expensiveOpLimiter, userId)
+    if (rateLimitResponse) return rateLimitResponse
+    
     const { claimId } = await params
 
     // Verify ownership

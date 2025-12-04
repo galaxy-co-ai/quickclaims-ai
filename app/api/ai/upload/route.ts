@@ -10,7 +10,12 @@ import { requireAuthUserId } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     // Get authenticated user
-    await requireAuthUserId()
+    const userId = await requireAuthUserId()
+    
+    // Check rate limit
+    const { checkRateLimit, aiUploadLimiter } = await import('@/lib/rate-limit')
+    const rateLimitResponse = await checkRateLimit(aiUploadLimiter, userId)
+    if (rateLimitResponse) return rateLimitResponse
     
     const formData = await request.formData()
     const files = formData.getAll('files') as File[]

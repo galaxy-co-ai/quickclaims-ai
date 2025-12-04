@@ -100,6 +100,11 @@ export async function POST(request: NextRequest) {
     // Get authenticated user
     const userId = await requireAuthUserId()
     
+    // Check rate limit
+    const { checkRateLimit, aiChatLimiter } = await import('@/lib/rate-limit')
+    const rateLimitResponse = await checkRateLimit(aiChatLimiter, userId)
+    if (rateLimitResponse) return rateLimitResponse
+    
     // Set user ID for executor tool calls
     setCurrentUserId(userId)
 

@@ -17,6 +17,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Email page with Coming Soon placeholder for future Resend integration
 - Claim workflow automation: status auto-advances as tasks are completed (scope parsed, deltas generated, defense notes generated)
 - Settings persistence: user preferences (theme, notifications, AI settings) now saved to database and restored on page load
+- Error pages: custom error.tsx, global-error.tsx, and not-found.tsx for better error handling
+- Loading states: skeleton loading UI for all main routes (dashboard, projects, documents, settings, claims)
+- Rate limiting: Upstash-based rate limiting on AI routes to prevent abuse
+- Security headers: CSP, HSTS, X-Frame-Options, and other security headers in next.config.ts
+- CI/CD: GitHub Actions workflow for lint, typecheck, test, and build on PRs
 
 ### Changed
 - (none yet)

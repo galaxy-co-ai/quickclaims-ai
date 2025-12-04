@@ -26,6 +26,12 @@ async function verifyClaimOwnership(claimId: string, userId: string) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const userId = await requireAuthUserId()
+    
+    // Check rate limit for expensive operations
+    const { checkRateLimit, expensiveOpLimiter } = await import('@/lib/rate-limit')
+    const rateLimitResponse = await checkRateLimit(expensiveOpLimiter, userId)
+    if (rateLimitResponse) return rateLimitResponse
+    
     const { claimId } = await params
     const body = await request.json()
     const { uploadId } = body as { uploadId: string }
