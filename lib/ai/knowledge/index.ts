@@ -35,6 +35,12 @@ export * from './carrier-patterns'
 // NEW: Measurement report intelligence
 export * from './measurement-intelligence'
 
+// NEW PHASE 2: OSHA safety requirements
+export * from './osha-safety'
+
+// NEW PHASE 2: State-specific code amendments
+export * from './state-codes'
+
 /**
  * Knowledge Summary
  * 
@@ -90,6 +96,20 @@ export * from './measurement-intelligence'
  * 33. HOVER_FIELDS - HOVER report field definitions
  * 34. QUANTITY_CALCULATIONS - Formulas for calculating quantities
  * 35. calculateQuantities() - Calculate all quantities from measurements
+ * 
+ * OSHA SAFETY (NEW PHASE 2):
+ * 36. OSHA_FALL_PROTECTION - 29 CFR 1926 Subpart M requirements
+ * 37. SAFETY_THRESHOLDS - Height and pitch thresholds for fall protection
+ * 38. SAFETY_CHARGES - Xactimate charges justified by OSHA compliance
+ * 39. getApplicableOSHARequirements() - Get OSHA requirements for a project
+ * 40. getApplicableSafetyCharges() - Get safety charges for pitch/height
+ * 
+ * STATE CODES (NEW PHASE 2):
+ * 41. STATE_AMENDMENTS - State-specific code amendments beyond IRC
+ * 42. STATE_WIND_ZONES - Wind zone requirements by state
+ * 43. HAIL_ZONES - Hail frequency and impact rating requirements
+ * 44. getStateAmendments() - Get amendments for a specific state
+ * 45. isHighHailZone() - Check if state is in high hail zone
  */
 
 // Utility function to get a full context summary for the AI
@@ -196,6 +216,32 @@ export function getKnowledgeSummary(): string {
 - Project Brief
 - Inspection Checklist
 - Photo Evidence Report
+
+### OSHA Safety Requirements (NEW)
+**29 CFR 1926 Subpart M - Fall Protection:**
+- Fall protection required at 6+ feet
+- Steep roofs (>4/12) require personal fall arrest systems
+- Safety monitoring requires competent person on-site
+- Steep charges include OSHA compliance labor reduction
+
+**Safety Charge Justifications:**
+- RFGSTEEP (7/12-9/12): Workers in harnesses at reduced productivity
+- RFGSTEEP+ (10/12-12/12): Full fall arrest required, dramatic productivity reduction
+- RFGHIGH+ (2+ stories): Material handling, fall protection setup
+- RFGSUPR: Competent person required by OSHA 1926.502(h)
+
+### State-Specific Code Amendments (NEW)
+**States with Enhanced Requirements:**
+- Florida: HVHZ zones, secondary water barrier, 6 nails/shingle
+- Texas: TDI windstorm certification in coastal counties
+- Colorado: Extended ice barrier, impact-resistant requirements
+- Oklahoma/Kansas: Hail zone requirements
+- Coastal states: Wind-borne debris region compliance
+
+**High Hail Zones:**
+- Texas, Oklahoma, Kansas, Colorado, Nebraska, Minnesota
+- May require Class 3 or Class 4 impact-resistant shingles
+- Insurance incentives for impact-resistant materials
 
 ### Response Style
 - Defense notes: 2-3 sentences with code citation

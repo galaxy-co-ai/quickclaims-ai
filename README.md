@@ -6,7 +6,12 @@ AI-powered insurance claim supplement platform for roofing contractors. Upload c
 
 ## ✨ What's New
 
-### Knowledge Base Expansion - Phase 1 (Latest)
+### Knowledge Base Expansion - Phase 2 (Latest)
+Continued expansion of the AI's domain knowledge:
+- **OSHA Safety Requirements** - 29 CFR 1926 Subpart M fall protection with defense notes for steep/high charges
+- **State-Specific Codes** - Florida HVHZ, Texas TDI, Colorado hail zones, and more state amendments
+
+### Knowledge Base Expansion - Phase 1
 Major expansion of the AI's domain knowledge:
 - **Manufacturer Requirements** - GAF, Owens Corning, CertainTeed, Atlas installation guides with warranty requirements
 - **Carrier Objection Patterns** - 20+ common objections with proven rebuttal templates
@@ -67,6 +72,8 @@ All generated documents auto-save to the **AI Docs** tab of each project.
 - **Manufacturer Requirements** - GAF, Owens Corning, CertainTeed, Atlas installation specs
 - **Carrier Objection Patterns** - 20+ objections with rebuttal templates by carrier
 - **Measurement Intelligence** - EagleView/HOVER field parsing and waste rules
+- **OSHA Safety Requirements** - 29 CFR 1926 fall protection with charge justifications
+- **State Code Amendments** - Florida, Texas, Colorado, and more state-specific requirements
 - **Supplement Workflow** - 6-phase process with KPIs
 
 ### Core Platform
@@ -150,13 +157,15 @@ quickclaims-ai/
 ├── lib/
 │   ├── ai/
 │   │   ├── knowledge/                   # Domain knowledge base
-│   │   │   ├── carrier-patterns.ts      # Carrier objections & rebuttals (NEW)
-│   │   │   ├── commonly-missed.ts       # 40+ items carriers omit (EXPANDED)
+│   │   │   ├── carrier-patterns.ts      # Carrier objections & rebuttals
+│   │   │   ├── commonly-missed.ts       # 40+ items carriers omit
 │   │   │   ├── document-templates.ts    # Output templates
 │   │   │   ├── index.ts                 # Knowledge base exports
 │   │   │   ├── irc-codes-full.ts        # Building codes
-│   │   │   ├── manufacturer-requirements.ts  # GAF/OC/CT specs (NEW)
-│   │   │   ├── measurement-intelligence.ts   # EagleView/HOVER parsing (NEW)
+│   │   │   ├── manufacturer-requirements.ts  # GAF/OC/CT specs
+│   │   │   ├── measurement-intelligence.ts   # EagleView/HOVER parsing
+│   │   │   ├── osha-safety.ts           # 29 CFR 1926 fall protection (NEW)
+│   │   │   ├── state-codes.ts           # State-specific amendments (NEW)
 │   │   │   ├── supplement-workflow.ts   # Process knowledge
 │   │   │   └── xactimate-full.ts        # 100+ line item codes
 │   │   ├── anthropic.ts                 # Claude integration
