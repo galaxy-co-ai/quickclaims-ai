@@ -57,7 +57,7 @@ export default function Error({
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={reset} variant="default">
+          <Button onClick={reset} variant="primary">
             Try again
           </Button>
           <Button

@@ -24,7 +24,7 @@ export default function NotFound() {
         {/* Quick Links */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
           <Link href="/dashboard">
-            <Button variant="default">Go to Dashboard</Button>
+            <Button variant="primary">Go to Dashboard</Button>
           </Link>
           <Link href="/projects">
             <Button variant="outline">View Projects</Button>
