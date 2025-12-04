@@ -68,8 +68,8 @@ export function AddressAutocomplete({
         setIsOpen(data.length > 0);
         setSelectedIndex(-1);
       }
-    } catch (err) {
-      console.error("Error fetching address suggestions:", err);
+    } catch {
+      // Address suggestions fetch failed - silently ignore
       setSuggestions([]);
     } finally {
       setIsLoading(false);

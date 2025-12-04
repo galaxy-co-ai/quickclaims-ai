@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ClaimSummaryCard, LineItemsTable, ScopeUploader, DeltaList, DefenseNotes, SupplementBuilder } from '@/components/claims'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { toast } from '@/components/ui/Toast'
 
 interface PhotoAnalysis {
   id: string
@@ -160,8 +161,8 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         setPhotos(data.photoAnalyses || [])
         setPhotoCount(data.photoAnalyses?.length || 0)
       }
-    } catch (error) {
-      console.error('Failed to load photos:', error)
+    } catch {
+      toast.error('Could not load photos. Please try again.')
     } finally {
       setIsLoadingPhotos(false)
     }
@@ -177,8 +178,8 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         setDeltaCount(data.deltas?.length || 0)
         setApprovedCount((data.deltas || []).filter((d: DeltaItem) => d.status === 'approved' || d.status === 'included').length)
       }
-    } catch (error) {
-      console.error('Failed to load deltas:', error)
+    } catch {
+      toast.error('Could not load deltas. Please try again.')
     } finally {
       setIsLoadingDeltas(false)
     }
@@ -193,8 +194,8 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         setDefenseNotes(data.defenseNotes || [])
         setApprovedCount(data.approvedCount || 0)
       }
-    } catch (error) {
-      console.error('Failed to load defense notes:', error)
+    } catch {
+      toast.error('Could not load defense notes. Please try again.')
     } finally {
       setIsLoadingDefense(false)
     }
@@ -212,8 +213,8 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         setDeltaCount(data.deltas?.length || 0)
         router.refresh()
       }
-    } catch (error) {
-      console.error('Failed to generate deltas:', error)
+    } catch {
+      toast.error('Could not generate deltas. Please try again.')
     } finally {
       setIsGeneratingDeltas(false)
     }
@@ -236,8 +237,8 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         ).length
         setApprovedCount(newApproved)
       }
-    } catch (error) {
-      console.error('Failed to update delta status:', error)
+    } catch {
+      toast.error('Could not update delta status. Please try again.')
     }
   }
 
@@ -576,8 +577,8 @@ function PhotoUploader({
       }
 
       onPhotoUploaded()
-    } catch (error) {
-      console.error('Error uploading photos:', error)
+    } catch {
+      toast.error('Could not upload photos. Please try again.')
     } finally {
       setIsUploading(false)
       e.target.value = '' // Reset input
@@ -788,8 +789,8 @@ function ScopeUploaderMini({
       if (!parseResponse.ok) throw new Error('Parse failed')
 
       onScopeParsed()
-    } catch (error) {
-      console.error('Error:', error)
+    } catch {
+      toast.error('Could not upload scope. Please try again.')
     } finally {
       setIsUploading(false)
     }

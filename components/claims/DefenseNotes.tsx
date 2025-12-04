@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { toast } from '@/components/ui/Toast'
 
 interface DefenseNote {
   deltaId: string
@@ -32,8 +33,8 @@ export function DefenseNotes({ claimId, notes, onRefresh }: DefenseNotesProps) {
       await navigator.clipboard.writeText(note.defenseNote)
       setCopiedId(note.deltaId)
       setTimeout(() => setCopiedId(null), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
+    } catch {
+      toast.error('Could not copy to clipboard. Please try again.')
     }
   }
 
@@ -43,8 +44,8 @@ export function DefenseNotes({ claimId, notes, onRefresh }: DefenseNotesProps) {
       await navigator.clipboard.writeText(allNotes)
       setCopiedId('all')
       setTimeout(() => setCopiedId(null), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
+    } catch {
+      toast.error('Could not copy to clipboard. Please try again.')
     }
   }
 
@@ -61,8 +62,8 @@ export function DefenseNotes({ claimId, notes, onRefresh }: DefenseNotesProps) {
       if (res.ok && onRefresh) {
         onRefresh()
       }
-    } catch (err) {
-      console.error('Failed to regenerate:', err)
+    } catch {
+      toast.error('Could not regenerate defense notes. Please try again.')
     } finally {
       setIsRegenerating(false)
     }

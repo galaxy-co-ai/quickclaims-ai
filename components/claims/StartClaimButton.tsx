@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
+import { toast } from '@/components/ui/Toast'
 
 interface StartClaimButtonProps {
   projectId: string
@@ -30,8 +31,7 @@ export function StartClaimButton({ projectId }: StartClaimButtonProps) {
       const { claim } = await response.json()
       router.push(`/claims/${claim.id}`)
     } catch (error) {
-      console.error('Error creating claim:', error)
-      alert(error instanceof Error ? error.message : 'Failed to create claim')
+      toast.error(error instanceof Error ? error.message : 'Failed to create claim. Please try again.')
     } finally {
       setIsLoading(false)
     }

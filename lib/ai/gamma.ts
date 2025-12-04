@@ -32,7 +32,7 @@ export async function generateGammaDocument(options: GenerateOptions): Promise<G
   const apiKey = process.env.GAMMA_API_KEY
   
   if (!apiKey) {
-    console.warn('GAMMA_API_KEY not configured')
+    // GAMMA_API_KEY not configured
     return null
   }
 
@@ -52,14 +52,13 @@ export async function generateGammaDocument(options: GenerateOptions): Promise<G
     })
 
     if (!response.ok) {
-      const error = await response.text()
-      console.error('Gamma API error:', error)
+      // Gamma API returned an error
       return null
     }
 
     return await response.json()
-  } catch (error) {
-    console.error('Gamma API request failed:', error)
+  } catch {
+    // Gamma API request failed
     return null
   }
 }

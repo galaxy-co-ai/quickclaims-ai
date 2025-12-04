@@ -137,7 +137,7 @@ export async function POST(
         }
       })
 
-      console.error('Photo analysis failed:', analysisError)
+      // Photo analysis failed - error logged to database
       return NextResponse.json({ 
         error: 'Photo analysis failed',
         details: analysisError instanceof Error ? analysisError.message : 'Unknown error',

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { toast } from '@/components/ui/Toast'
 
 interface SupplementPackage {
   claim: {
@@ -80,8 +81,8 @@ export function SupplementBuilder({ claimId, onSupplementSent }: SupplementBuild
         setValidation(data.validation)
         setSummary(data.summary)
       }
-    } catch (error) {
-      console.error('Failed to load package:', error)
+    } catch {
+      toast.error('Could not load supplement package. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -113,8 +114,8 @@ export function SupplementBuilder({ claimId, onSupplementSent }: SupplementBuild
         onSupplementSent?.()
         router.refresh()
       }
-    } catch (error) {
-      console.error('Failed to mark as sent:', error)
+    } catch {
+      toast.error('Could not mark supplement as sent. Please try again.')
     } finally {
       setIsSending(false)
     }

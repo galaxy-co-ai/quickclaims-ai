@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
         }
         // Trim to keep prompt size manageable
         scopeContent = text.slice(0, 20000)
-      } catch (e) {
-        console.error('Scope extraction failed:', e)
+      } catch {
+        // Scope extraction failed - continue without scope content
       }
     }
 
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
       if (results?.length) {
         retrievalContext = results.map(r => r.chunk).join('\n---\n')
       }
-    } catch (e) {
-      console.error('Vector search failed:', e)
+    } catch {
+      // Vector search failed - continue without retrieval context
     }
 
     // Cache check

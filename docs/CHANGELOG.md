@@ -16,7 +16,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - (none yet)
 
 ### Fixed
-- (none yet)
+- Removed console.log/error/warn statements from production code
+- Added user-friendly toast notifications for all error states
 
 ---
 

@@ -8,6 +8,7 @@ import {
   getRequiredItems,
   calculateCompletion 
 } from '@/lib/claims/photo-checklist'
+import { toast } from '@/components/ui/Toast'
 
 interface PhotoChecklistProps {
   claimId: string
@@ -97,8 +98,8 @@ export function PhotoChecklist({
       if (!completedIds.includes(itemId)) {
         setCompletedIds(prev => [...prev, itemId])
       }
-    } catch (error) {
-      console.error('Photo upload failed:', error)
+    } catch {
+      toast.error('Could not upload photo. Please try again.')
     } finally {
       setIsUploading(false)
       setUploadingItemId(null)
