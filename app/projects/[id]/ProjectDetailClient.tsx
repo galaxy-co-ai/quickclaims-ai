@@ -1100,8 +1100,14 @@ function PhotoGallery({ projectId, photos, onPhotoDeleted }: PhotoGalleryProps) 
       {/* Photo Lightbox Modal */}
       {selectedPhoto && (
         <div 
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Photo viewer: ${selectedPhoto.fileName}`}
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setSelectedPhoto(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setSelectedPhoto(null)
+          }}
         >
           <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <img
@@ -1115,18 +1121,21 @@ function PhotoGallery({ projectId, photos, onPhotoDeleted }: PhotoGalleryProps) 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                aria-label="Open photo in new tab"
               >
                 <ExternalLink className="w-5 h-5" />
               </a>
               <button
                 onClick={() => handleDeletePhoto(selectedPhoto.id)}
                 className="p-2 rounded-full bg-white/10 hover:bg-red-500/50 text-white transition-colors"
+                aria-label="Delete photo"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setSelectedPhoto(null)}
                 className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors ml-2"
+                aria-label="Close photo viewer"
               >
                 ✕
               </button>

@@ -100,10 +100,15 @@ export function EditProjectModal({ project, isOpen, onClose, onSaved }: EditProj
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-card rounded-2xl shadow-xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-project-title"
+        className="relative w-full max-w-md mx-4 bg-card rounded-2xl shadow-xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold">Edit Project</h2>
+          <h2 id="edit-project-title" className="text-lg font-semibold">Edit Project</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"

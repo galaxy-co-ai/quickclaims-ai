@@ -257,9 +257,18 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
       />
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border overflow-x-auto">
+      <div 
+        className="flex gap-2 border-b border-border overflow-x-auto"
+        role="tablist"
+        aria-label="Claim sections"
+      >
         <button
           onClick={() => setActiveTab('scope')}
+          role="tab"
+          id="tab-scope"
+          aria-selected={activeTab === 'scope'}
+          aria-controls="tabpanel-scope"
+          tabIndex={activeTab === 'scope' ? 0 : -1}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'scope'
               ? 'border-primary text-primary'
@@ -270,6 +279,11 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         </button>
         <button
           onClick={() => setActiveTab('photos')}
+          role="tab"
+          id="tab-photos"
+          aria-selected={activeTab === 'photos'}
+          aria-controls="tabpanel-photos"
+          tabIndex={activeTab === 'photos' ? 0 : -1}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'photos'
               ? 'border-primary text-primary'
@@ -280,6 +294,11 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         </button>
         <button
           onClick={() => setActiveTab('deltas')}
+          role="tab"
+          id="tab-deltas"
+          aria-selected={activeTab === 'deltas'}
+          aria-controls="tabpanel-deltas"
+          tabIndex={activeTab === 'deltas' ? 0 : -1}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'deltas'
               ? 'border-primary text-primary'
@@ -290,6 +309,11 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         </button>
         <button
           onClick={() => setActiveTab('defense')}
+          role="tab"
+          id="tab-defense"
+          aria-selected={activeTab === 'defense'}
+          aria-controls="tabpanel-defense"
+          tabIndex={activeTab === 'defense' ? 0 : -1}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'defense'
               ? 'border-primary text-primary'
@@ -300,6 +324,11 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         </button>
         <button
           onClick={() => setActiveTab('supplement')}
+          role="tab"
+          id="tab-supplement"
+          aria-selected={activeTab === 'supplement'}
+          aria-controls="tabpanel-supplement"
+          tabIndex={activeTab === 'supplement' ? 0 : -1}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'supplement'
               ? 'border-primary text-primary'
@@ -310,6 +339,11 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
         </button>
         <button
           onClick={() => setActiveTab('activity')}
+          role="tab"
+          id="tab-activity"
+          aria-selected={activeTab === 'activity'}
+          aria-controls="tabpanel-activity"
+          tabIndex={activeTab === 'activity' ? 0 : -1}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'activity'
               ? 'border-primary text-primary'
@@ -322,7 +356,7 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
 
       {/* Tab Content */}
       {activeTab === 'scope' && (
-        <div className="space-y-6">
+        <div role="tabpanel" id="tabpanel-scope" aria-labelledby="tab-scope" className="space-y-6">
           {/* Upload New Scope or Show Line Items */}
           {lineItems.length === 0 ? (
             <ScopeUploader
@@ -374,7 +408,7 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
 
       {/* Photos Tab */}
       {activeTab === 'photos' && (
-        <div className="space-y-6">
+        <div role="tabpanel" id="tabpanel-photos" aria-labelledby="tab-photos" className="space-y-6">
           {/* Photo Upload */}
           <PhotoUploader
             claimId={claim.id}
@@ -411,7 +445,7 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
 
       {/* Deltas Tab */}
       {activeTab === 'deltas' && (
-        <div className="space-y-6">
+        <div role="tabpanel" id="tabpanel-deltas" aria-labelledby="tab-deltas" className="space-y-6">
           {/* Generate Button */}
           <div className="flex items-center justify-between">
             <div>
@@ -457,7 +491,7 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
 
       {/* Defense Notes Tab */}
       {activeTab === 'defense' && (
-        <div className="space-y-6">
+        <div role="tabpanel" id="tabpanel-defense" aria-labelledby="tab-defense" className="space-y-6">
           {isLoadingDefense ? (
             <div className="flex items-center justify-center py-12">
               <svg className="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24">
@@ -477,7 +511,7 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
 
       {/* Supplement Tab */}
       {activeTab === 'supplement' && (
-        <div className="space-y-6">
+        <div role="tabpanel" id="tabpanel-supplement" aria-labelledby="tab-supplement" className="space-y-6">
           <SupplementBuilder
             claimId={claim.id}
             onSupplementSent={() => router.refresh()}
@@ -486,6 +520,7 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
       )}
 
       {activeTab === 'activity' && (
+        <div role="tabpanel" id="tabpanel-activity" aria-labelledby="tab-activity">
         <Card>
           <CardHeader>
             <CardTitle>Claim Activity</CardTitle>
@@ -513,6 +548,7 @@ const [activeTab, setActiveTab] = useState<'scope' | 'photos' | 'deltas' | 'defe
             )}
           </CardContent>
         </Card>
+        </div>
       )}
     </div>
   )
