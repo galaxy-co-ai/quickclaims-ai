@@ -2,10 +2,7 @@
  * Robust PDF Text Extraction
  * 
  * Uses Mozilla PDF.js (pdfjs-dist) as primary extractor - pure JavaScript, works everywhere.
- * Falls back to GPT-4 Vision for scanned/image-based PDFs.
  */
-
-import { openai } from '@/lib/ai/openai'
 
 /**
  * Extract text from a PDF buffer using PDF.js
@@ -14,36 +11,16 @@ import { openai } from '@/lib/ai/openai'
 export async function extractTextFromPdf(buffer: Buffer): Promise<{
   text: string
   pageCount: number
-  method: 'pdfjs' | 'vision' | 'failed'
+  method: 'pdfjs' | 'failed'
+  error?: string
 }> {
-  // Try PDF.js first (works for text-based PDFs)
   try {
-    const text = await extractWithPdfJs(buffer)
+    const result = await extractWithPdfJs(buffer)
     
-    // Check if we got meaningful text (more than 200 chars suggests real content)
-    if (text && text.trim().length > 200) {
+    if (result.text && result.text.trim().length > 0) {
       return {
-        text: text.trim(),
-        pageCount: 1, // PDF.js gives us pages but we combine them
-        method: 'pdfjs',
-      }
-    }
-    
-    // If minimal text, it might be a scanned PDF - try Vision
-    const visionText = await extractWithVision(buffer)
-    if (visionText && visionText.trim().length > 100) {
-      return {
-        text: visionText.trim(),
-        pageCount: 1,
-        method: 'vision',
-      }
-    }
-    
-    // Return whatever we got from PDF.js even if minimal
-    if (text && text.trim().length > 0) {
-      return {
-        text: text.trim(),
-        pageCount: 1,
+        text: result.text.trim(),
+        pageCount: result.pageCount,
         method: 'pdfjs',
       }
     }
@@ -52,26 +29,15 @@ export async function extractTextFromPdf(buffer: Buffer): Promise<{
       text: '',
       pageCount: 0,
       method: 'failed',
+      error: 'PDF appears to be empty or contains only images without text',
     }
   } catch (error) {
-    // PDF.js failed completely, try Vision as fallback
-    try {
-      const visionText = await extractWithVision(buffer)
-      if (visionText && visionText.trim().length > 50) {
-        return {
-          text: visionText.trim(),
-          pageCount: 1,
-          method: 'vision',
-        }
-      }
-    } catch {
-      // Vision also failed
-    }
-    
+    const errorMsg = error instanceof Error ? error.message : 'Unknown PDF parsing error'
     return {
       text: '',
       pageCount: 0,
       method: 'failed',
+      error: errorMsg,
     }
   }
 }
@@ -80,13 +46,13 @@ export async function extractTextFromPdf(buffer: Buffer): Promise<{
  * Extract text using PDF.js (Mozilla's PDF library)
  * Pure JavaScript - works in Node.js, Edge, and browser
  */
-async function extractWithPdfJs(buffer: Buffer): Promise<string> {
-  // Dynamic import to avoid issues with SSR
-  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
+async function extractWithPdfJs(buffer: Buffer): Promise<{ text: string; pageCount: number }> {
+  // Dynamic import - use the getDocument export directly
+  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
   
   // Load the PDF document
   const uint8Array = new Uint8Array(buffer)
-  const loadingTask = pdfjsLib.getDocument({
+  const loadingTask = getDocument({
     data: uint8Array,
     useSystemFonts: true,
   })
@@ -100,7 +66,7 @@ async function extractWithPdfJs(buffer: Buffer): Promise<string> {
     const textContent = await page.getTextContent()
     
     // Combine text items with proper spacing
-    // Use type assertion - items are either TextItem (has str) or TextMarkedContent
+    // Filter to items with 'str' property (TextItem, not TextMarkedContent)
     const pageText = (textContent.items as Array<{ str?: string }>)
       .map((item) => item.str || '')
       .filter(Boolean)
@@ -111,49 +77,10 @@ async function extractWithPdfJs(buffer: Buffer): Promise<string> {
     }
   }
   
-  return textParts.join('\n\n')
-}
-
-/**
- * Extract text using GPT-4 Vision (for scanned/image PDFs)
- * Converts first pages to images and uses AI to read them
- */
-async function extractWithVision(buffer: Buffer): Promise<string> {
-  // Convert PDF buffer to base64 for the API
-  const base64 = buffer.toString('base64')
-  
-  // GPT-4o can actually read PDFs when sent as a file
-  // We'll send it as base64 encoded data
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `This is an insurance carrier scope PDF document (Statement of Loss). Extract ALL text content from this document exactly as it appears. Include:
-- All headers and titles
-- All line items with codes, descriptions, quantities, and prices
-- All totals and summaries
-- Property address, claim number, dates
-- Any notes or comments
-
-Return the raw text content only, preserving the structure as much as possible.`,
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: `data:application/pdf;base64,${base64}`,
-            },
-          },
-        ],
-      },
-    ],
-    max_tokens: 4096,
-  })
-  
-  return response.choices[0]?.message?.content || ''
+  return {
+    text: textParts.join('\n\n'),
+    pageCount: pdf.numPages,
+  }
 }
 
 /**
@@ -162,7 +89,7 @@ Return the raw text content only, preserving the structure as much as possible.`
 export async function extractTextFromPdfUrl(url: string): Promise<{
   text: string
   pageCount: number
-  method: 'pdfjs' | 'vision' | 'failed'
+  method: 'pdfjs' | 'failed'
   error?: string
 }> {
   try {
@@ -182,11 +109,12 @@ export async function extractTextFromPdfUrl(url: string): Promise<{
     
     return await extractTextFromPdf(buffer)
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
     return {
       text: '',
       pageCount: 0,
       method: 'failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: `PDF extraction failed: ${errorMsg}`,
     }
   }
 }
