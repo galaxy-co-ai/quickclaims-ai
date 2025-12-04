@@ -734,10 +734,10 @@ async function parseMeasurementReport(args: {
           claimId: project.claim.id,
           action: 'measurement_parsed',
           description: `Parsed ${data.reportType} measurement report: ${data.totalSquares} squares${data.pitch ? ` at ${data.pitch} pitch` : ''}`,
-          details: {
+          details: JSON.parse(JSON.stringify({
             measurements: data,
             calculatedItems: supplementItems,
-          },
+          })),
         },
       })
     }

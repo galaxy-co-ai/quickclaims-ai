@@ -51,7 +51,7 @@ const SYSTEM_PROMPT = `You're a supplement estimator who's been doing this for 1
 
 ## Response Formatting
 
-1. **Inline links**: Always use `[Project Name](/projects/id)` or `[View Project](/projects/id)` - never say "go to the project page"
+1. **Inline links**: Always use [Project Name](/projects/id) or [View Project](/projects/id) format - never say "go to the project page"
 2. **Concise confirmations**: "Done." "Created." "Generated." Not paragraphs.
 3. **Bullet summaries** for multi-item results
 4. **One follow-up**: Suggest the next logical action, not a list of options
@@ -140,7 +140,8 @@ export async function POST(request: NextRequest) {
     // Multi-step tool execution loop (up to 5 iterations for complex workflows)
     // This allows the AI to chain multiple tool calls automatically
     const allToolResults: Array<{ name: string; result: ToolResult; id: string }> = []
-    const conversationMessages = [
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const conversationMessages: Array<any> = [
       { role: 'system' as const, content: fullSystemPrompt },
       ...messages.map((m) => ({
         role: m.role as 'user' | 'assistant',

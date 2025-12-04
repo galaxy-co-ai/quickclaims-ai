@@ -36,7 +36,8 @@ export async function extractScopeMetadata(
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     
-    const mod = await import('pdf-parse')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod: any = await import('pdf-parse')
     const pdfParse = mod.default || mod
     const pdfData = await pdfParse(buffer)
     const scopeText = pdfData.text
@@ -104,8 +105,9 @@ export async function parseCarrierScopeFromUrl(
     const buffer = Buffer.from(arrayBuffer)
     
     // Extract text from PDF
-    const mod = await import('pdf-parse')
-    const pdfParse: any = mod.default || mod
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod: any = await import('pdf-parse')
+    const pdfParse = mod.default || mod
     const pdfData = await pdfParse(buffer)
     const scopeText = pdfData.text
     

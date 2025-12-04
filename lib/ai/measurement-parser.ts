@@ -110,7 +110,8 @@ export async function parseMeasurementReportFromUrl(
     const buffer = Buffer.from(arrayBuffer)
     
     // Extract text from PDF
-    const mod = await import('pdf-parse')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod: any = await import('pdf-parse')
     const pdfParse = mod.default || mod
     const pdfData = await pdfParse(buffer)
     const pdfText = pdfData.text

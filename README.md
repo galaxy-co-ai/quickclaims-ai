@@ -6,7 +6,15 @@ AI-powered insurance claim supplement platform for roofing contractors. Upload c
 
 ## ✨ What's New
 
-### Knowledge Base Expansion - Phase 4 (Latest)
+### Improvements V1 (December 2025)
+- **Global Search** - Press Cmd+K to search across all projects, claims, and documents
+- **Smart Scope Parsing** - Upload carrier scopes without creating a project first - AI extracts address and auto-creates
+- **Measurement Report Parsing** - AI parses EagleView, HOVER, and GAF QuickMeasure PDFs automatically
+- **Workflow Automation** - Claim status auto-advances as you complete tasks
+- **Settings Persistence** - Your preferences are now saved to your account
+- **Accessibility Improvements** - Better keyboard navigation and screen reader support
+
+### Knowledge Base Expansion - Phase 4
 Pricing intelligence and communication templates:
 - **Regional Pricing & O&P** - Regional multipliers, O&P justification rules, carrier-specific policies
 - **Email Templates** - Complete 16-email workflow from intake to claim closure
@@ -323,9 +331,9 @@ npx prisma db push   # Push schema changes
 
 ## Coming Soon
 
-- [ ] Email tool for carrier/contractor communication
-- [ ] Measurement report integration (EagleView/Hover)
-- [ ] Settings persistence to database
+- [ ] Email tool for carrier/contractor communication (page added, integration pending)
+- [x] ~~Measurement report integration~~ (EagleView/HOVER/GAF QuickMeasure parsing added)
+- [x] ~~Settings persistence to database~~ (user preferences now saved)
 - [ ] Mobile app
 
 ## Deployment
