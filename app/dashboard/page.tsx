@@ -51,6 +51,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  displayContent?: string; // What to show in UI (without URLs)
   timestamp: Date;
   toolsUsed?: ToolUsed[];
   actions?: ActionPayload[];
@@ -420,22 +421,26 @@ export default function DashboardPage() {
         }
       }
 
-      // Build message content with attachment info and URLs
-      let messageContent = input.trim();
+      // Build message content - separate display content from AI content
+      const userTypedText = input.trim();
+      let aiMessageContent = userTypedText;
+      
+      // Add file info to AI content (but not to display)
       if (uploadedFiles.length > 0) {
         const attachmentDescriptions = uploadedFiles.map(f => {
           const isImage = f.type.startsWith('image/');
           return `[Attached ${isImage ? 'image' : 'document'}: ${f.name}]\nURL: ${f.url}`;
         }).join('\n\n');
-        messageContent = messageContent 
-          ? `${messageContent}\n\n${attachmentDescriptions}`
+        aiMessageContent = userTypedText 
+          ? `${userTypedText}\n\n${attachmentDescriptions}`
           : attachmentDescriptions;
       }
 
       const userMessage: Message = {
         id: Date.now().toString(),
         role: "user",
-        content: messageContent,
+        content: aiMessageContent, // Full content for AI
+        displayContent: userTypedText || undefined, // Clean content for display
         timestamp: new Date(),
         attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
       };
@@ -701,27 +706,36 @@ export default function DashboardPage() {
                           )}
                         </div>
                       ))}
+                      {/* Show timestamp under attachments if no text was typed */}
+                      {!message.displayContent && message.attachments.length > 0 && (
+                        <p className="w-full text-[10px] text-muted-foreground">
+                          {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      )}
                     </div>
                   )}
 
-                  <div
-                    className={`rounded-2xl px-4 py-2.5 ${
-                      message.role === "assistant"
-                        ? "bg-card border border-border text-foreground"
-                        : "bg-primary text-primary-foreground"
-                    }`}
-                  >
-                    <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:text-inherit max-w-none">
-                      <MessageContent content={message.content} />
-                    </div>
-                    <p
-                      className={`text-[10px] mt-1.5 ${
-                        message.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/70"
+                  {/* Only show message bubble if there's text content to display */}
+                  {(message.displayContent || (message.role === "assistant")) && (
+                    <div
+                      className={`rounded-2xl px-4 py-2.5 ${
+                        message.role === "assistant"
+                          ? "bg-card border border-border text-foreground"
+                          : "bg-primary text-primary-foreground"
                       }`}
                     >
-                      {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
+                      <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:text-inherit max-w-none">
+                        <MessageContent content={message.displayContent || message.content} />
+                      </div>
+                      <p
+                        className={`text-[10px] mt-1.5 ${
+                          message.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/70"
+                        }`}
+                      >
+                        {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Tools Used Display */}
                   {message.toolsUsed && message.toolsUsed.length > 0 && (
