@@ -6,8 +6,13 @@ AI-powered insurance claim supplement platform for roofing contractors. Upload c
 
 ## ✨ What's New
 
-### Knowledge Base Expansion - Phase 2 (Latest)
-Continued expansion of the AI's domain knowledge:
+### Knowledge Base Expansion - Phase 3 (Latest)
+Business intelligence and damage identification:
+- **Depreciation Knowledge** - Material life expectancy tables, RCV/ACV policy differences, depreciation challenges
+- **Damage Pattern Identification** - Hail, wind, and non-storm damage identification with photo documentation standards
+
+### Knowledge Base Expansion - Phase 2
+Code compliance expansion:
 - **OSHA Safety Requirements** - 29 CFR 1926 Subpart M fall protection with defense notes for steep/high charges
 - **State-Specific Codes** - Florida HVHZ, Texas TDI, Colorado hail zones, and more state amendments
 
@@ -74,6 +79,8 @@ All generated documents auto-save to the **AI Docs** tab of each project.
 - **Measurement Intelligence** - EagleView/HOVER field parsing and waste rules
 - **OSHA Safety Requirements** - 29 CFR 1926 fall protection with charge justifications
 - **State Code Amendments** - Florida, Texas, Colorado, and more state-specific requirements
+- **Depreciation Knowledge** - Material life expectancy, RCV/ACV, depreciation challenges
+- **Damage Identification** - Hail, wind, age, manufacturing defect patterns with photo standards
 - **Supplement Workflow** - 6-phase process with KPIs
 
 ### Core Platform
@@ -159,13 +166,15 @@ quickclaims-ai/
 │   │   ├── knowledge/                   # Domain knowledge base
 │   │   │   ├── carrier-patterns.ts      # Carrier objections & rebuttals
 │   │   │   ├── commonly-missed.ts       # 40+ items carriers omit
+│   │   │   ├── damage-patterns.ts       # Hail/wind damage identification (NEW)
+│   │   │   ├── depreciation.ts          # Material life & depreciation (NEW)
 │   │   │   ├── document-templates.ts    # Output templates
 │   │   │   ├── index.ts                 # Knowledge base exports
 │   │   │   ├── irc-codes-full.ts        # Building codes
 │   │   │   ├── manufacturer-requirements.ts  # GAF/OC/CT specs
 │   │   │   ├── measurement-intelligence.ts   # EagleView/HOVER parsing
-│   │   │   ├── osha-safety.ts           # 29 CFR 1926 fall protection (NEW)
-│   │   │   ├── state-codes.ts           # State-specific amendments (NEW)
+│   │   │   ├── osha-safety.ts           # 29 CFR 1926 fall protection
+│   │   │   ├── state-codes.ts           # State-specific amendments
 │   │   │   ├── supplement-workflow.ts   # Process knowledge
 │   │   │   └── xactimate-full.ts        # 100+ line item codes
 │   │   ├── anthropic.ts                 # Claude integration
