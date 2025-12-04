@@ -1,33 +1,26 @@
 /**
- * LlamaParse PDF Extraction
+ * LlamaParse PDF Extraction via REST API
  * 
  * Production-grade PDF parsing using LlamaIndex's LlamaParse.
- * Much faster and more accurate than pdfjs for text extraction.
+ * Uses the REST API directly for compatibility with Next.js server components.
  * 
- * Typical processing time: ~6 seconds regardless of document size
+ * Typical processing time: ~5-10 seconds regardless of document size
  */
 
-import { LlamaParseReader } from 'llamaindex'
+const LLAMAPARSE_API_URL = 'https://api.cloud.llamaindex.ai/api/v1/parsing'
 
-// Lazy initialization
-let reader: LlamaParseReader | null = null
+interface LlamaParseJob {
+  id: string
+  status: 'PENDING' | 'SUCCESS' | 'ERROR'
+}
 
-function getReader(): LlamaParseReader {
-  if (!reader) {
-    const apiKey = process.env.LLAMA_CLOUD_API_KEY
-    if (!apiKey) {
-      throw new Error('LLAMA_CLOUD_API_KEY environment variable is required for PDF parsing. Get one free at https://cloud.llamaindex.ai/')
-    }
-    reader = new LlamaParseReader({ 
-      apiKey,
-      resultType: 'text', // We just need text, not markdown
-    })
-  }
-  return reader
+interface LlamaParseResult {
+  text: string
+  pages: Array<{ page: number; text: string }>
 }
 
 /**
- * Extract text from a PDF buffer using LlamaParse
+ * Extract text from a PDF buffer using LlamaParse REST API
  */
 export async function extractTextWithLlamaParse(buffer: Buffer | ArrayBuffer): Promise<{
   text: string
@@ -36,28 +29,125 @@ export async function extractTextWithLlamaParse(buffer: Buffer | ArrayBuffer): P
   error?: string
 }> {
   const startTime = Date.now()
-  console.log('[LlamaParse] Starting PDF extraction...')
+  console.log('[LlamaParse] Starting PDF extraction via REST API...')
+  
+  const apiKey = process.env.LLAMA_CLOUD_API_KEY
+  if (!apiKey) {
+    return {
+      text: '',
+      pageCount: 0,
+      method: 'failed',
+      error: 'LLAMA_CLOUD_API_KEY environment variable is required',
+    }
+  }
   
   try {
-    const llamaReader = getReader()
+    // Convert to ArrayBuffer for Blob compatibility
+    let arrayBuffer: ArrayBuffer
+    if (buffer instanceof ArrayBuffer) {
+      arrayBuffer = buffer
+    } else {
+      // Create a new ArrayBuffer copy from Buffer
+      // Type assertion needed due to Node.js Buffer types
+      arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer
+    }
     
-    // Convert to Buffer if needed
-    const pdfBuffer = buffer instanceof ArrayBuffer 
-      ? Buffer.from(buffer) 
-      : buffer
+    // Step 1: Upload the file
+    const formData = new FormData()
+    const blob = new Blob([arrayBuffer], { type: 'application/pdf' })
+    formData.append('file', blob, 'document.pdf')
     
-    // Parse the PDF
-    const documents = await llamaReader.loadDataAsContent(pdfBuffer)
+    console.log('[LlamaParse] Uploading PDF...')
+    const uploadResponse = await fetch(`${LLAMAPARSE_API_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: formData,
+    })
     
-    // Combine all document text
-    const text = documents.map(doc => doc.text).join('\n\n')
-    const pageCount = documents.length
-    
-    console.log(`[LlamaParse] Extraction complete in ${Date.now() - startTime}ms (${pageCount} pages, ${text.length} chars)`)
-    
-    if (text.trim().length > 0) {
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text()
+      console.error('[LlamaParse] Upload failed:', errorText)
       return {
-        text: text.trim(),
+        text: '',
+        pageCount: 0,
+        method: 'failed',
+        error: `Upload failed: ${uploadResponse.status} - ${errorText}`,
+      }
+    }
+    
+    const job: LlamaParseJob = await uploadResponse.json()
+    console.log('[LlamaParse] Job created:', job.id)
+    
+    // Step 2: Poll for completion
+    let result: LlamaParseResult | null = null
+    let attempts = 0
+    const maxAttempts = 60 // 60 seconds max wait
+    
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      attempts++
+      
+      const statusResponse = await fetch(`${LLAMAPARSE_API_URL}/job/${job.id}`, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+      })
+      
+      if (!statusResponse.ok) {
+        console.error('[LlamaParse] Status check failed')
+        continue
+      }
+      
+      const status: LlamaParseJob = await statusResponse.json()
+      
+      if (status.status === 'SUCCESS') {
+        // Get the result
+        const resultResponse = await fetch(`${LLAMAPARSE_API_URL}/job/${job.id}/result/text`, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+          },
+        })
+        
+        if (resultResponse.ok) {
+          const text = await resultResponse.text()
+          result = { text, pages: [] }
+        }
+        break
+      } else if (status.status === 'ERROR') {
+        return {
+          text: '',
+          pageCount: 0,
+          method: 'failed',
+          error: 'LlamaParse processing failed',
+        }
+      }
+      
+      // Still pending, continue polling
+      if (attempts % 5 === 0) {
+        console.log(`[LlamaParse] Still processing... (${attempts}s)`)
+      }
+    }
+    
+    if (!result) {
+      return {
+        text: '',
+        pageCount: 0,
+        method: 'failed',
+        error: 'LlamaParse timed out after 60 seconds',
+      }
+    }
+    
+    const text = result.text.trim()
+    // Estimate page count from text (rough estimate)
+    const pageCount = Math.max(1, Math.ceil(text.length / 3000))
+    
+    console.log(`[LlamaParse] Extraction complete in ${Date.now() - startTime}ms (${pageCount} est. pages, ${text.length} chars)`)
+    
+    if (text.length > 0) {
+      return {
+        text,
         pageCount,
         method: 'llamaparse',
       }
@@ -82,7 +172,7 @@ export async function extractTextWithLlamaParse(buffer: Buffer | ArrayBuffer): P
 }
 
 /**
- * Extract text from a PDF URL using LlamaParse
+ * Extract text from a PDF URL using LlamaParse REST API
  */
 export async function extractTextFromUrlWithLlamaParse(url: string): Promise<{
   text: string

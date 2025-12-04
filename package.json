@@ -24,7 +24,6 @@
     "@upstash/redis": "^1.35.7",
     "@upstash/vector": "^1.2.2",
     "@vercel/blob": "^2.0.0",
-    "llamaindex": "^0.12.1",
     "lucide-react": "^0.555.0",
     "next": "16.0.6",
     "openai": "^6.9.1",
