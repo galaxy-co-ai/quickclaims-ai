@@ -5,6 +5,9 @@ import { AI_TOOLS, TOOL_DESCRIPTIONS, ToolName } from '@/lib/ai/tools'
 import { executeToolCall, ToolResult, setCurrentUserId } from '@/lib/ai/executor'
 import { requireAuthUserId } from '@/lib/auth'
 
+// Force Node.js runtime for PDF parsing support (pdf-parse uses native modules)
+export const runtime = 'nodejs'
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })

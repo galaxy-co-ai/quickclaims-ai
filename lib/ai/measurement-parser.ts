@@ -100,26 +100,47 @@ export async function parseMeasurementReportFromUrl(
   fileUrl: string
 ): Promise<{ success: boolean; data?: MeasurementData; message: string }> {
   try {
-    // Download the PDF
-    const response = await fetch(fileUrl)
+    // Step 1: Download the PDF
+    let response: Response
+    try {
+      response = await fetch(fileUrl)
+    } catch (fetchError) {
+      return {
+        success: false,
+        message: 'Could not download PDF file. Please try re-uploading.',
+      }
+    }
+    
     if (!response.ok) {
-      throw new Error(`Failed to download PDF: ${response.statusText}`)
+      return {
+        success: false,
+        message: `Failed to download PDF (HTTP ${response.status}). Please try re-uploading the file.`,
+      }
     }
     
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     
-    // Extract text from PDF
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mod: any = await import('pdf-parse')
-    const pdfParse = mod.default || mod
-    const pdfData = await pdfParse(buffer)
-    const pdfText = pdfData.text
+    // Step 2: Extract text from PDF
+    let pdfText: string
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mod: any = await import('pdf-parse')
+      const pdfParse = mod.default || mod
+      const pdfData = await pdfParse(buffer)
+      pdfText = pdfData.text
+    } catch (parseError) {
+      const parseErrorMsg = parseError instanceof Error ? parseError.message : 'unknown'
+      return {
+        success: false,
+        message: `Could not read PDF content. The file may be corrupted, encrypted, or in an unsupported format. (${parseErrorMsg})`,
+      }
+    }
     
     if (!pdfText || pdfText.length < 50) {
       return {
         success: false,
-        message: 'PDF appears to be empty or unreadable',
+        message: 'PDF appears to be empty or unreadable. It may be a scanned image without OCR text.',
       }
     }
     

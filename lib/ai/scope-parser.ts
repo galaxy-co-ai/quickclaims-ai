@@ -28,27 +28,51 @@ export async function extractScopeMetadata(
   }
 }> {
   try {
-    const response = await fetch(fileUrl)
+    // Step 1: Download the PDF
+    let response: Response
+    try {
+      response = await fetch(fileUrl)
+    } catch (fetchError) {
+      return {
+        success: false,
+        message: `Could not download PDF file. Please check the URL and try re-uploading.`,
+      }
+    }
+    
     if (!response.ok) {
-      throw new Error(`Failed to download PDF: ${response.statusText}`)
+      return {
+        success: false,
+        message: `Failed to download PDF (HTTP ${response.status}). Please try re-uploading the file.`,
+      }
     }
     
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mod: any = await import('pdf-parse')
-    const pdfParse = mod.default || mod
-    const pdfData = await pdfParse(buffer)
-    const scopeText = pdfData.text
+    // Step 2: Parse PDF text
+    let scopeText: string
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mod: any = await import('pdf-parse')
+      const pdfParse = mod.default || mod
+      const pdfData = await pdfParse(buffer)
+      scopeText = pdfData.text
+    } catch (parseError) {
+      const parseErrorMsg = parseError instanceof Error ? parseError.message : 'unknown'
+      return {
+        success: false,
+        message: `Could not read PDF content. The file may be corrupted, encrypted, or in an unsupported format. (${parseErrorMsg})`,
+      }
+    }
     
     if (!scopeText || scopeText.length < 100) {
       return {
         success: false,
-        message: 'PDF appears to be empty or unreadable',
+        message: 'PDF appears to be empty or unreadable. It may be a scanned image without OCR text.',
       }
     }
     
+    // Step 3: Extract structured data with AI
     const extracted = await extractScopeData(scopeText)
     
     return {
@@ -95,30 +119,51 @@ export async function parseCarrierScopeFromUrl(
   }
 }> {
   try {
-    // Download the PDF
-    const response = await fetch(fileUrl)
+    // Step 1: Download the PDF
+    let response: Response
+    try {
+      response = await fetch(fileUrl)
+    } catch (fetchError) {
+      return {
+        success: false,
+        message: `Could not download PDF file. Please check the URL and try re-uploading.`,
+      }
+    }
+    
     if (!response.ok) {
-      throw new Error(`Failed to download PDF: ${response.statusText}`)
+      return {
+        success: false,
+        message: `Failed to download PDF (HTTP ${response.status}). Please try re-uploading the file.`,
+      }
     }
     
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     
-    // Extract text from PDF
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mod: any = await import('pdf-parse')
-    const pdfParse = mod.default || mod
-    const pdfData = await pdfParse(buffer)
-    const scopeText = pdfData.text
+    // Step 2: Extract text from PDF
+    let scopeText: string
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mod: any = await import('pdf-parse')
+      const pdfParse = mod.default || mod
+      const pdfData = await pdfParse(buffer)
+      scopeText = pdfData.text
+    } catch (parseError) {
+      const parseErrorMsg = parseError instanceof Error ? parseError.message : 'unknown'
+      return {
+        success: false,
+        message: `Could not read PDF content. The file may be corrupted, encrypted, or in an unsupported format. (${parseErrorMsg})`,
+      }
+    }
     
     if (!scopeText || scopeText.length < 100) {
       return {
         success: false,
-        message: 'PDF appears to be empty or unreadable',
+        message: 'PDF appears to be empty or unreadable. It may be a scanned image without OCR text.',
       }
     }
     
-    // Use GPT-4 to extract structured data
+    // Step 3: Use GPT-4 to extract structured data
     const extracted = await extractScopeData(scopeText)
     
     // Get or create claim for this project

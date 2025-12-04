@@ -5,6 +5,9 @@ import { extractScopeText } from '@/lib/extract/scope'
 import { requireAuthUserId } from '@/lib/auth'
 import { checkAndAdvanceStatus } from '@/lib/claims/workflow-automation'
 
+// Force Node.js runtime for PDF parsing support (pdf-parse uses native modules)
+export const runtime = 'nodejs'
+
 interface RouteParams {
   params: Promise<{ claimId: string }>
 }

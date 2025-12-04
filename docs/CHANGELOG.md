@@ -31,6 +31,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added user-friendly toast notifications for all error states
 - Accessibility: Added ARIA attributes to tabs, modals, and photo lightbox for better screen reader support
 - Accessibility: Added keyboard navigation (Escape to close) for modal dialogs
+- **PDF Parsing**: Fixed document parsing failures in production by forcing Node.js runtime for API routes that use pdf-parse (native module compatibility)
+- **PDF Error Handling**: Improved error messages for PDF parsing failures - now shows specific, actionable messages for download failures, corrupted files, encrypted PDFs, and scanned images without OCR
 
 ---
 
