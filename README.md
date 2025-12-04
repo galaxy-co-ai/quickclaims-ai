@@ -6,7 +6,14 @@ AI-powered insurance claim supplement platform for roofing contractors. Upload c
 
 ## ✨ What's New
 
-### Proactive AI Assistant (Latest)
+### Knowledge Base Expansion - Phase 1 (Latest)
+Major expansion of the AI's domain knowledge:
+- **Manufacturer Requirements** - GAF, Owens Corning, CertainTeed, Atlas installation guides with warranty requirements
+- **Carrier Objection Patterns** - 20+ common objections with proven rebuttal templates
+- **Expanded Missed Items** - From 15 to 40+ commonly missed items with defense notes
+- **Measurement Intelligence** - EagleView/HOVER parsing rules, waste exclusions, pitch factors
+
+### Proactive AI Assistant
 - **Automatic tool chaining** - AI chains multiple actions without asking permission (parse scope → create project → generate docs)
 - **Scope PDF auto-parsing** - Drop a carrier scope PDF and AI extracts everything (address, carrier, claim #, line items, totals, D$/SQ)
 - **Natural personality** - Warm, concise responses like a skilled coworker (no "I'd be happy to help!" fluff)
@@ -53,10 +60,13 @@ All generated documents auto-save to the **AI Docs** tab of each project.
 - **Scope PDF Parsing** - Automatically extracts all data from carrier scopes
 - **Persistent History** - Conversations saved across sessions
 
-### Knowledge Base
+### Knowledge Base (Expanded)
 - **100+ Xactimate Codes** - Full pricing and descriptions
-- **IRC Building Codes** - R903, R904, R905, R806 with defense templates
-- **Commonly Missed Items** - 15+ items carriers frequently omit
+- **IRC Building Codes** - R903, R904, R905, R806, R908 with defense templates
+- **40+ Commonly Missed Items** - Categorized by priority (critical/high/medium)
+- **Manufacturer Requirements** - GAF, Owens Corning, CertainTeed, Atlas installation specs
+- **Carrier Objection Patterns** - 20+ objections with rebuttal templates by carrier
+- **Measurement Intelligence** - EagleView/HOVER field parsing and waste rules
 - **Supplement Workflow** - 6-phase process with KPIs
 
 ### Core Platform
@@ -140,9 +150,13 @@ quickclaims-ai/
 ├── lib/
 │   ├── ai/
 │   │   ├── knowledge/                   # Domain knowledge base
-│   │   │   ├── commonly-missed.ts       # Items carriers omit
+│   │   │   ├── carrier-patterns.ts      # Carrier objections & rebuttals (NEW)
+│   │   │   ├── commonly-missed.ts       # 40+ items carriers omit (EXPANDED)
 │   │   │   ├── document-templates.ts    # Output templates
+│   │   │   ├── index.ts                 # Knowledge base exports
 │   │   │   ├── irc-codes-full.ts        # Building codes
+│   │   │   ├── manufacturer-requirements.ts  # GAF/OC/CT specs (NEW)
+│   │   │   ├── measurement-intelligence.ts   # EagleView/HOVER parsing (NEW)
 │   │   │   ├── supplement-workflow.ts   # Process knowledge
 │   │   │   └── xactimate-full.ts        # 100+ line item codes
 │   │   ├── anthropic.ts                 # Claude integration

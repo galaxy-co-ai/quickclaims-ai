@@ -3,6 +3,12 @@
  * 
  * Central export for all AI knowledge modules.
  * Import from this file to access the complete knowledge base.
+ * 
+ * PHASE 1 EXPANSION (December 2025):
+ * - Added manufacturer installation requirements (GAF, OC, CertainTeed, Atlas)
+ * - Added carrier objection patterns and rebuttal templates
+ * - Expanded commonly missed items from 15 to 40+
+ * - Added measurement intelligence (EagleView/HOVER parsing)
  */
 
 // Workflow knowledge
@@ -14,37 +20,76 @@ export * from './xactimate-full'
 // IRC building codes
 export * from './irc-codes-full'
 
-// Commonly missed items
+// Commonly missed items (expanded 40+ items)
 export * from './commonly-missed'
 
 // Document templates
 export * from './document-templates'
+
+// NEW: Manufacturer installation requirements
+export * from './manufacturer-requirements'
+
+// NEW: Carrier objection patterns and rebuttals
+export * from './carrier-patterns'
+
+// NEW: Measurement report intelligence
+export * from './measurement-intelligence'
 
 /**
  * Knowledge Summary
  * 
  * Quick reference for what's available in the knowledge base:
  * 
+ * CORE WORKFLOW:
  * 1. WORKFLOW_PHASES - The 6-phase supplement workflow
  * 2. KPI_TARGETS - Target metrics for estimators
  * 3. CLAIM_STATUSES - Status progression for claims
  * 4. GUARDRAILS - What to avoid (policy interpretation, etc.)
  * 
+ * XACTIMATE:
  * 5. XACTIMATE_CODES - 100+ line item codes with pricing
  * 6. getXactimateInfo() - Look up a specific code
  * 7. searchXactimateCodes() - Search codes by description
  * 
+ * IRC CODES:
  * 8. IRC_ROOFING_CODES - All relevant IRC codes with defense templates
  * 9. getIRCCode() - Look up a specific IRC code
  * 10. getIRCForXactimate() - Get IRC codes for an Xactimate code
  * 11. generateIRCDefenseNote() - Generate defense note from template
  * 
- * 12. COMMONLY_MISSED_ITEMS - Items carriers frequently omit
+ * COMMONLY MISSED ITEMS:
+ * 12. COMMONLY_MISSED_ITEMS - 40+ items carriers frequently omit
  * 13. getDefenseNote() - Get defense note for an item
  * 14. getMissedItemsByPriority() - Filter by critical/high/medium
  * 
+ * DOCUMENT TEMPLATES:
  * 15. DOCUMENT_TEMPLATES - Templates for all document types
  * 16. getDocumentTemplate() - Get template for a document type
+ * 
+ * MANUFACTURER REQUIREMENTS (NEW):
+ * 17. GAF_REQUIREMENTS - GAF installation requirements
+ * 18. OWENS_CORNING_REQUIREMENTS - OC installation requirements
+ * 19. CERTAINTEED_REQUIREMENTS - CertainTeed installation requirements
+ * 20. ATLAS_REQUIREMENTS - Atlas installation requirements
+ * 21. MANUFACTURER_WARRANTIES - Warranty requirements and void conditions
+ * 22. getManufacturerRequirements() - Get all requirements for a manufacturer
+ * 23. getManufacturerDefenseNote() - Get defense note for manufacturer requirement
+ * 
+ * CARRIER PATTERNS (NEW):
+ * 24. CARRIER_OBJECTIONS - Common objection patterns with rebuttals
+ * 25. CARRIER_PROFILES - Carrier-specific tips and tendencies
+ * 26. getCarrierObjections() - Get objections common to a carrier
+ * 27. getCarrierProfile() - Get carrier profile and tips
+ * 28. getRebuttalTemplate() - Get rebuttal template for objection type
+ * 
+ * MEASUREMENT INTELLIGENCE (NEW):
+ * 29. WASTE_EXCLUSIONS - Items NOT included in waste calculations
+ * 30. PITCH_FACTORS - Pitch multipliers and steep charge codes
+ * 31. WASTE_GUIDELINES - Waste % by roof complexity
+ * 32. EAGLEVIEW_FIELDS - EagleView report field definitions
+ * 33. HOVER_FIELDS - HOVER report field definitions
+ * 34. QUANTITY_CALCULATIONS - Formulas for calculating quantities
+ * 35. calculateQuantities() - Calculate all quantities from measurements
  */
 
 // Utility function to get a full context summary for the AI
@@ -57,6 +102,7 @@ export function getKnowledgeSummary(): string {
 - 24-hour turnaround SLA for complete files
 - 48-hour follow-up cadence with carriers
 - Target: 20-30% claim lift, ~2.5 notes per job per week
+- Key metric: Dollar per Square (D$/SQ) = Final Roof RCV ÷ squares
 
 ### Xactimate Codes
 - 100+ roofing line item codes with descriptions and average pricing
@@ -72,13 +118,74 @@ export function getKnowledgeSummary(): string {
 - R905.2.8.3 - Step flashing required
 - R905.2.8.5 - Drip edge required
 - R806.2 - Ventilation requirements
+- R908.5 - Flashing replacement when damaged
 
-### Commonly Missed Items (Critical)
+### Commonly Missed Items (40+ items)
+**Critical (Code Required):**
 - Drip Edge (R905.2.8.5) - carriers often omit entirely
 - Starter Course (R905.2.8.1) - not in waste calculations
 - Ice & Water Shield (R905.2.7.1) - valleys and eaves
 - Step Flashing (R905.2.8.3) - wall intersections
 - Hip/Ridge Cap - not in EagleView waste
+
+**High Priority:**
+- Steep/High charges, Supervisor hours, Cricket/saddle
+- Decking replacement, Valley metal, Chimney flashing
+
+**Additional Items:**
+- Pipe jacks, Exhaust caps, Power vents, D&R items
+- Ground/pool tarping, O&P, Permit, PU/SU
+- Fascia, Soffit, Gutter repairs
+
+### Manufacturer Requirements (NEW)
+**GAF Products:**
+- Starter strip required for warranty
+- IWS in valleys per installation manual
+- TimberTex/Seal-A-Ridge for hip/ridge
+- Proper ventilation required (voids warranty if inadequate)
+
+**Owens Corning Products:**
+- Starter strip required for system warranty
+- WeatherLock IWS in valleys
+- DecoRidge for Duration series
+- SureNail Technology nailing requirements
+
+**CertainTeed Products:**
+- SwiftStart starter required
+- WinterGuard IWS in critical areas
+- Shadow Ridge cap for Landmark series
+
+### Carrier Objection Patterns (NEW)
+**Very Common Objections:**
+- "Drip edge not required in this market" → Cite IRC R905.2.8.5 (mandatory)
+- "Starter included in waste" → Show EagleView disclaimer
+- "Step flashing can be reused" → Cite IRC R908.5 (damaged during removal)
+- "Hip/ridge in waste" → Show measurement report exclusion
+
+**Carrier-Specific Tips:**
+- State Farm: Code citations carry weight
+- Allstate: Documentation-heavy, multiple rebuttal rounds
+- USAA: Generally fair, quick decisions
+- Farmers: May use regional pricing arguments
+
+### Measurement Intelligence (NEW)
+**CRITICAL - Waste Does NOT Include:**
+- Hip & Ridge cap (add separately)
+- Starter strip (add separately)
+- Ice & water shield (separate line item)
+- Valley metal (separate line item)
+- Drip edge (separate line item)
+
+**Pitch Factors & Steep Charges:**
+- 7/12-9/12 = RFGSTEEP ($56.27/SQ)
+- 10/12-12/12 = RFGSTEEP+ ($88.44/SQ)
+- >12/12 = RFGSTEEP++ ($114.88/SQ)
+
+**Waste Guidelines:**
+- Simple roof: 10%
+- Moderate: 12%
+- Complex: 15%
+- Cut-up: 18%
 
 ### Document Types
 - Delta Analysis Report
