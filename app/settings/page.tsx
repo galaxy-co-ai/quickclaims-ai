@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppShell } from "@/components/layout";
 import { Card, Button, Input, toast } from "@/components/ui";
+import type { UserPreferences } from "@/lib/validations/settings";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"profile" | "preferences" | "billing">("profile");
@@ -136,6 +137,70 @@ function ProfileTab() {
 }
 
 function PreferencesTab() {
+  const [preferences, setPreferences] = useState<UserPreferences>({
+    theme: 'system',
+    emailNotifications: true,
+    claimStatusUpdates: true,
+    documentGenerationNotify: false,
+    defaultDetailLevel: 'standard',
+    autoAnalyzePhotos: true,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setPreferences(prev => ({ ...prev, ...data.preferences }));
+        }
+      } catch {
+        // Use defaults on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadPreferences();
+  }, []);
+
+  // Save preferences with debounce
+  const savePreferences = useCallback(async (newPrefs: Partial<UserPreferences>) => {
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPrefs),
+      });
+      if (res.ok) {
+        toast.success('Preferences saved');
+      } else {
+        toast.error('Could not save preferences');
+      }
+    } catch {
+      toast.error('Could not save preferences');
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
+
+  const updatePreference = <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
+    const newPrefs = { ...preferences, [key]: value };
+    setPreferences(newPrefs);
+    savePreferences({ [key]: value });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Notifications */}
@@ -145,17 +210,23 @@ function PreferencesTab() {
           <ToggleSetting
             label="Email Notifications"
             description="Receive updates about your projects via email"
-            defaultChecked={true}
+            checked={preferences.emailNotifications ?? true}
+            onChange={(checked) => updatePreference('emailNotifications', checked)}
+            disabled={isSaving}
           />
           <ToggleSetting
             label="Claim Status Updates"
             description="Get notified when claim status changes"
-            defaultChecked={true}
+            checked={preferences.claimStatusUpdates ?? true}
+            onChange={(checked) => updatePreference('claimStatusUpdates', checked)}
+            disabled={isSaving}
           />
           <ToggleSetting
             label="Document Generation Complete"
             description="Notify when AI finishes generating documents"
-            defaultChecked={false}
+            checked={preferences.documentGenerationNotify ?? false}
+            onChange={(checked) => updatePreference('documentGenerationNotify', checked)}
+            disabled={isSaving}
           />
         </div>
       </Card>
@@ -169,12 +240,14 @@ function PreferencesTab() {
               Theme
             </label>
             <div className="flex gap-2">
-              {["Light", "Dark", "System"].map((theme) => (
+              {(["light", "dark", "system"] as const).map((theme) => (
                 <button
                   key={theme}
+                  onClick={() => updatePreference('theme', theme)}
+                  disabled={isSaving}
                   className={`
-                    px-4 py-2 text-sm font-medium rounded-lg border transition-all
-                    ${theme === "Light"
+                    px-4 py-2 text-sm font-medium rounded-lg border transition-all capitalize
+                    ${preferences.theme === theme
                       ? "border-primary bg-primary/5 text-primary"
                       : "border-border text-muted-foreground hover:border-primary/50"
                     }
@@ -197,12 +270,14 @@ function PreferencesTab() {
               Default Detail Level
             </label>
             <div className="flex gap-2">
-              {["Concise", "Standard", "Detailed"].map((level) => (
+              {(["concise", "standard", "detailed"] as const).map((level) => (
                 <button
                   key={level}
+                  onClick={() => updatePreference('defaultDetailLevel', level)}
+                  disabled={isSaving}
                   className={`
-                    px-4 py-2 text-sm font-medium rounded-lg border transition-all
-                    ${level === "Standard"
+                    px-4 py-2 text-sm font-medium rounded-lg border transition-all capitalize
+                    ${preferences.defaultDetailLevel === level
                       ? "border-primary bg-primary/5 text-primary"
                       : "border-border text-muted-foreground hover:border-primary/50"
                     }
@@ -216,7 +291,9 @@ function PreferencesTab() {
           <ToggleSetting
             label="Auto-analyze Photos"
             description="Automatically run AI analysis when photos are uploaded"
-            defaultChecked={true}
+            checked={preferences.autoAnalyzePhotos ?? true}
+            onChange={(checked) => updatePreference('autoAnalyzePhotos', checked)}
+            disabled={isSaving}
           />
         </div>
       </Card>
@@ -301,14 +378,16 @@ function BillingTab() {
 function ToggleSetting({
   label,
   description,
-  defaultChecked,
+  checked,
+  onChange,
+  disabled = false,
 }: {
   label: string;
   description: string;
-  defaultChecked: boolean;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
 }) {
-  const [checked, setChecked] = useState(defaultChecked);
-
   return (
     <div className="flex items-center justify-between">
       <div>
@@ -316,10 +395,12 @@ function ToggleSetting({
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <button
-        onClick={() => setChecked(!checked)}
+        onClick={() => onChange(!checked)}
+        disabled={disabled}
         className={`
           relative w-11 h-6 rounded-full transition-colors
           ${checked ? "bg-primary" : "bg-muted"}
+          ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
         role="switch"
         aria-checked={checked}
