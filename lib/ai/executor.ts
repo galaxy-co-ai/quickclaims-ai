@@ -11,6 +11,7 @@ import {
   loadProjectContext,
   saveDocument
 } from './document-generator'
+import { parseCarrierScopeFromUrl } from './scope-parser'
 
 // User ID is now passed in from the API route
 let currentUserId: string | null = null
@@ -79,6 +80,15 @@ export async function executeToolCall(
           address?: string
           projectType?: string
           status?: string
+        })
+
+      // ==========================================
+      // FILE PROCESSING
+      // ==========================================
+      case 'parse_carrier_scope':
+        return await parseCarrierScope(args as {
+          fileUrl: string
+          projectId?: string
         })
 
       // ==========================================
@@ -575,6 +585,67 @@ async function listDocuments(args: { projectId?: string }): Promise<ToolResult> 
         createdAt: d.createdAt,
       })),
     },
+  }
+}
+
+// ==========================================
+// IMPLEMENTATION: File Processing
+// ==========================================
+
+async function parseCarrierScope(args: {
+  fileUrl: string
+  projectId?: string
+}): Promise<ToolResult> {
+  const userId = getUserId()
+  
+  try {
+    let projectId = args.projectId
+    
+    // If no projectId provided, we'll need to parse first to get address, then find/create project
+    if (!projectId) {
+      // For now, require projectId - in future we could parse first, extract address, then find/create
+      return {
+        success: false,
+        message: 'Project ID is required. Create a project first or specify which project this scope belongs to.',
+      }
+    }
+    
+    // Verify project belongs to user
+    const project = await db.project.findFirst({
+      where: { id: projectId, userId },
+    })
+    
+    if (!project) {
+      return { success: false, message: 'Project not found' }
+    }
+    
+    // Parse the scope
+    const result = await parseCarrierScopeFromUrl(args.fileUrl, projectId, userId)
+    
+    if (!result.success) {
+      return {
+        success: false,
+        message: result.message,
+      }
+    }
+    
+    return {
+      success: true,
+      message: result.message,
+      data: result.data,
+      action: result.data?.claimId
+        ? {
+            type: 'navigate',
+            payload: { url: `/projects/${projectId}?tab=overview` },
+          }
+        : undefined,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return {
+      success: false,
+      message: `Failed to parse scope: ${errorMessage}`,
+    }
   }
 }
 

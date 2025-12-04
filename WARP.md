@@ -3,7 +3,7 @@
 Last Updated: December 3, 2025
 
 ## Project Overview
-AI-powered insurance claim supplement platform for construction contractors. Parses carrier scopes, detects missing items, generates IRC-backed defense notes, and builds professional supplement packages. Includes persistent AI chat, Clerk authentication, and comprehensive project management.
+AI-powered insurance claim supplement platform for construction contractors. Parses carrier scopes, detects missing items, generates IRC-backed defense notes, and builds professional supplement packages. Features a proactive AI assistant that chains multiple actions automatically (parse scope → create project → generate docs), persistent chat history, Clerk authentication, and comprehensive project management.
 
 ## Tech Stack (Locked)
 - **Framework:** Next.js 16 with App Router (Turbopack)
@@ -77,8 +77,9 @@ quickclaims-ai/
 │   │   ├── knowledge/                # Domain knowledge base
 │   │   ├── anthropic.ts              # Claude integration
 │   │   ├── document-generator.ts     # Doc generation
-│   │   ├── executor.ts               # Tool execution
+│   │   ├── executor.ts               # Tool execution (17 tools)
 │   │   ├── openai.ts                 # GPT-4 integration
+│   │   ├── scope-parser.ts           # Carrier scope PDF parsing
 │   │   └── tools.ts                  # AI tool definitions
 │   ├── auth.ts                       # Clerk auth utilities
 │   ├── claims/                       # Claims logic

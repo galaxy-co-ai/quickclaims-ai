@@ -6,6 +6,13 @@ AI-powered insurance claim supplement platform for roofing contractors. Upload c
 
 ## ✨ What's New
 
+### Proactive AI Assistant (Latest)
+- **Automatic tool chaining** - AI chains multiple actions without asking permission (parse scope → create project → generate docs)
+- **Scope PDF auto-parsing** - Drop a carrier scope PDF and AI extracts everything (address, carrier, claim #, line items, totals, D$/SQ)
+- **Natural personality** - Warm, concise responses like a skilled coworker (no "I'd be happy to help!" fluff)
+- **Smart context** - AI knows what each project needs and proactively suggests next steps
+- **One-shot workflows** - "Here's the State Farm scope for Johnson" → Project created, scope parsed, delta analysis ready
+
 ### Conversation Persistence & History
 - **Conversations persist** - Navigate away and come back, your chat history is saved
 - **History panel** - View all past conversations with the AI
@@ -38,10 +45,12 @@ All generated documents auto-save to the **AI Docs** tab of each project.
 
 ### AI Assistant (Powered by Claude & GPT-4)
 - **Domain Expert** - Knows IRC codes, Xactimate codes, supplement workflow
-- **Proactive Generation** - Suggests documents based on what you share
-- **Natural Conversation** - Just describe what you need in plain English
-- **Action-Oriented** - Creates documents directly, doesn't just explain how
+- **Proactive & Action-First** - Does the work first, explains briefly after
+- **Automatic Tool Chaining** - Chains up to 5 tools in one response (parse → create → generate)
+- **Natural Personality** - Warm and concise like a skilled coworker, no chatbot fluff
+- **Smart Context** - Tracks project state and suggests what's missing
 - **File Uploads** - Drag & drop photos and documents into the chat
+- **Scope PDF Parsing** - Automatically extracts all data from carrier scopes
 - **Persistent History** - Conversations saved across sessions
 
 ### Knowledge Base
@@ -140,6 +149,7 @@ quickclaims-ai/
 │   │   ├── document-generator.ts        # Document generation
 │   │   ├── executor.ts                  # Tool execution
 │   │   ├── openai.ts                    # GPT-4 integration
+│   │   ├── scope-parser.ts              # Carrier scope PDF parsing
 │   │   └── tools.ts                     # AI tool definitions
 │   ├── auth.ts                          # Clerk auth utilities
 │   ├── claims/                          # Claim utilities
@@ -176,6 +186,7 @@ quickclaims-ai/
 | `update_project` | Edit project details |
 | `list_projects` | Get user's projects |
 | `get_project_details` | Full project info |
+| `parse_carrier_scope` | Parse carrier scope PDF and extract all data |
 | `generate_delta_analysis` | Create delta report comparing scope to code requirements |
 | `generate_cover_letter` | Professional carrier submission email |
 | `generate_defense_notes` | Xactimate-ready notes with IRC citations |
@@ -272,7 +283,6 @@ npx prisma db push   # Push schema changes
 ## Coming Soon
 
 - [ ] Email tool for carrier/contractor communication
-- [ ] Carrier scope PDF auto-parsing on upload
 - [ ] Measurement report integration (EagleView/Hover)
 - [ ] Settings persistence to database
 - [ ] Mobile app

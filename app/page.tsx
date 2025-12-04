@@ -61,13 +61,6 @@ const features = [
   },
 ];
 
-// Stats for social proof
-const stats = [
-  { label: "IRC Codes", value: "9+" },
-  { label: "Xactimate Codes", value: "50+" },
-  { label: "Workflow Stages", value: "11" },
-  { label: "Photo Checklist Items", value: "50+" },
-];
 
 export default function Home() {
   return (
@@ -150,20 +143,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-16 animate-fade-in-up delay-225">
-              {stats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="text-center p-4 rounded-2xl bg-card border border-border"
-                >
-                  <div className="text-3xl md:text-4xl font-display font-bold text-primary mb-1">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
@@ -186,12 +165,14 @@ export default function Home() {
                   className="group p-6 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300"
                   style={{ animationDelay: `${index * 75}ms` }}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-primary-light text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    {feature.icon}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary-light text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-lg font-semibold font-display text-foreground">
+                      {feature.title}
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-semibold font-display text-foreground mb-2">
-                    {feature.title}
-                  </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     {feature.description}
                   </p>
@@ -247,18 +228,22 @@ export default function Home() {
                 },
               ].map((item) => (
                 <div key={item.step} className="relative">
-                  <div className="text-6xl font-display font-bold text-primary/10 mb-4">
+                  <div className="absolute top-0 right-0 text-7xl font-display font-bold text-primary/10">
                     {item.step}
                   </div>
-                  <div className="w-14 h-14 rounded-2xl bg-primary-light text-primary flex items-center justify-center mb-4">
-                    {item.icon}
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-primary-light text-primary flex items-center justify-center shrink-0">
+                        {item.icon}
+                      </div>
+                      <h3 className="text-xl font-semibold font-display text-foreground">
+                        {item.title}
+                      </h3>
+                    </div>
+                    <p className="text-muted-foreground mt-12">
+                      {item.description}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-semibold font-display text-foreground mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {item.description}
-                  </p>
                 </div>
               ))}
             </div>

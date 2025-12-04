@@ -115,6 +115,31 @@ export const AI_TOOLS: ChatCompletionTool[] = [
   },
 
   // ==========================================
+  // FILE PROCESSING
+  // ==========================================
+  {
+    type: 'function',
+    function: {
+      name: 'parse_carrier_scope',
+      description: 'Parse a carrier scope PDF file and extract all data (address, carrier, claim #, line items, totals, D$/SQ). Automatically creates/updates claim and stores line items. Use this when user uploads a carrier scope PDF.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fileUrl: {
+            type: 'string',
+            description: 'The URL of the carrier scope PDF file to parse',
+          },
+          projectId: {
+            type: 'string',
+            description: 'The project ID to associate the parsed scope with. If not provided, will try to find or create based on extracted address.',
+          },
+        },
+        required: ['fileUrl'],
+      },
+    },
+  },
+
+  // ==========================================
   // DOCUMENT GENERATION (AI-Powered)
   // ==========================================
   {
@@ -412,6 +437,9 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   list_projects: 'Getting your projects',
   get_project_details: 'Loading project details',
   update_project: 'Updating project details',
+  
+  // File processing
+  parse_carrier_scope: 'Parsing carrier scope PDF',
   
   // Document generation (AI-powered)
   generate_delta_analysis: 'Generating Delta Analysis Report',
