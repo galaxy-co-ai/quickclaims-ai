@@ -31,8 +31,12 @@ export async function extractScopeMetadata(
   }
 }> {
   try {
+    const startTime = Date.now()
+    console.log('[PDF] extractScopeMetadata: Starting PDF extraction...')
+    
     // Extract text from PDF using robust multi-method extraction
     const extraction = await extractTextFromPdfUrl(fileUrl)
+    console.log(`[PDF] extractScopeMetadata: PDF text extracted in ${Date.now() - startTime}ms (${extraction.pageCount} pages, ${extraction.text?.length || 0} chars)`)
     
     if (extraction.method === 'failed' || !extraction.text) {
       return {
@@ -51,7 +55,10 @@ export async function extractScopeMetadata(
     }
     
     // Extract structured data with AI
+    console.log('[PDF] extractScopeMetadata: Calling GPT-4 for structured extraction...')
+    const gptStartTime = Date.now()
     const extracted = await extractScopeData(scopeText)
+    console.log(`[PDF] extractScopeMetadata: GPT-4 extraction complete in ${Date.now() - gptStartTime}ms`)
     
     return {
       success: true,

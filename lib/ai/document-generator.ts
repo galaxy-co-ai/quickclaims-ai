@@ -17,9 +17,14 @@ import {
   type DocumentType
 } from './knowledge'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
-})
+// Lazy initialization to check API key at runtime
+function getAnthropicClient(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY environment variable is not configured. Please add it in Vercel Settings > Environment Variables.')
+  }
+  return new Anthropic({ apiKey })
+}
 
 // Types for document generation
 export interface ProjectContext {
@@ -123,7 +128,7 @@ Generate a complete, professional Delta Analysis Report following the template s
 
 Format in clean markdown. Be specific with quantities based on available measurements. Use code citations throughout.`
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropicClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 4000,
     messages: [{ role: 'user', content: prompt }]
@@ -189,7 +194,7 @@ Generate a professional cover letter/email that:
 
 Keep it to about 200-300 words. Construction-focused - no policy discussion.`
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropicClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1500,
     messages: [{ role: 'user', content: prompt }]
@@ -253,7 +258,7 @@ Generate complete, copy-ready defense notes for EACH item above. Each note shoul
 
 Format as a markdown document with each item as a section. Include the Xactimate code and quantity after each item header.`
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropicClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 3000,
     messages: [{ role: 'user', content: prompt }]
@@ -338,7 +343,7 @@ Generate a comprehensive, professional Supplement Letter that includes:
 
 This should be a complete, ready-to-submit document. Be specific with quantities and calculations.`
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropicClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 6000,
     messages: [{ role: 'user', content: prompt }]
@@ -409,7 +414,7 @@ Generate a professional rebuttal that:
 
 The response should be ready to send as-is.`
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropicClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }]
@@ -458,7 +463,7 @@ Generate a clean, professional Project Brief in markdown format with:
 
 Keep it concise - one page max.`
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropicClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1500,
     messages: [{ role: 'user', content: prompt }]

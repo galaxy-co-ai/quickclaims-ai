@@ -405,14 +405,21 @@ async function getProjectDetails(args: {
 // ==========================================
 
 async function generateDeltaAnalysisDoc(args: { projectId: string }): Promise<ToolResult> {
+  console.log('[AI] generateDeltaAnalysis starting for project:', args.projectId)
+  
   const context = await loadProjectContext(args.projectId)
   if (!context) {
+    console.log('[AI] generateDeltaAnalysis: Project not found')
     return { success: false, message: 'Project not found' }
   }
+  console.log('[AI] generateDeltaAnalysis: Context loaded for', context.clientName)
 
   try {
+    console.log('[AI] generateDeltaAnalysis: Calling Claude API...')
     const doc = await genDeltaAnalysis(context)
+    console.log('[AI] generateDeltaAnalysis: Claude response received, saving document...')
     const docId = await saveDocument(doc)
+    console.log('[AI] generateDeltaAnalysis: Document saved with ID:', docId)
     
     return {
       success: true,
@@ -425,6 +432,7 @@ async function generateDeltaAnalysisDoc(args: { projectId: string }): Promise<To
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[AI] generateDeltaAnalysis FAILED:', errorMessage, error)
     return { success: false, message: `Failed to generate delta analysis: ${errorMessage}` }
   }
 }
@@ -455,14 +463,21 @@ async function generateCoverLetterDoc(args: { projectId: string }): Promise<Tool
 }
 
 async function generateDefenseNotesDoc(args: { projectId: string }): Promise<ToolResult> {
+  console.log('[AI] generateDefenseNotes starting for project:', args.projectId)
+  
   const context = await loadProjectContext(args.projectId)
   if (!context) {
+    console.log('[AI] generateDefenseNotes: Project not found')
     return { success: false, message: 'Project not found' }
   }
+  console.log('[AI] generateDefenseNotes: Context loaded for', context.clientName)
 
   try {
+    console.log('[AI] generateDefenseNotes: Calling Claude API...')
     const doc = await genDefenseNotes(context)
+    console.log('[AI] generateDefenseNotes: Claude response received, saving document...')
     const docId = await saveDocument(doc)
+    console.log('[AI] generateDefenseNotes: Document saved with ID:', docId)
     
     return {
       success: true,
@@ -475,6 +490,7 @@ async function generateDefenseNotesDoc(args: { projectId: string }): Promise<Too
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[AI] generateDefenseNotes FAILED:', errorMessage, error)
     return { success: false, message: `Failed to generate defense notes: ${errorMessage}` }
   }
 }

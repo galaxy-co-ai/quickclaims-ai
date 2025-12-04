@@ -5,8 +5,12 @@ import { AI_TOOLS, TOOL_DESCRIPTIONS, ToolName } from '@/lib/ai/tools'
 import { executeToolCall, ToolResult, setCurrentUserId } from '@/lib/ai/executor'
 import { requireAuthUserId } from '@/lib/auth'
 
-// Force Node.js runtime for PDF parsing support (pdf-parse uses native modules)
+// Force Node.js runtime for PDF parsing support
 export const runtime = 'nodejs'
+
+// Extend timeout for complex operations (PDF parsing + document generation)
+// Vercel Pro allows up to 300s, Hobby allows 60s
+export const maxDuration = 60
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
