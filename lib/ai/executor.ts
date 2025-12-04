@@ -11,7 +11,7 @@ import {
   loadProjectContext,
   saveDocument
 } from './document-generator'
-import { parseCarrierScopeFromUrl } from './scope-parser'
+import { parseCarrierScopeFromUrl, extractScopeMetadata } from './scope-parser'
 
 // User ID is now passed in from the API route
 let currentUserId: string | null = null
@@ -601,25 +601,56 @@ async function parseCarrierScope(args: {
   try {
     let projectId = args.projectId
     
-    // If no projectId provided, we'll need to parse first to get address, then find/create project
+    // If no projectId provided, extract metadata first and find/create project
     if (!projectId) {
-      // For now, require projectId - in future we could parse first, extract address, then find/create
-      return {
-        success: false,
-        message: 'Project ID is required. Create a project first or specify which project this scope belongs to.',
+      // Extract metadata from scope to get address
+      const metadata = await extractScopeMetadata(args.fileUrl)
+      
+      if (!metadata.success || !metadata.data?.propertyAddress) {
+        return {
+          success: false,
+          message: metadata.message || 'Could not extract address from scope PDF. Please create a project first.',
+        }
+      }
+      
+      const extractedAddress = metadata.data.propertyAddress
+      const extractedName = metadata.data.insuredName || 'Unknown Client'
+      
+      // Search for existing project with matching address (case-insensitive)
+      const existingProject = await db.project.findFirst({
+        where: {
+          userId,
+          address: { contains: extractedAddress.split(',')[0], mode: 'insensitive' },
+        },
+      })
+      
+      if (existingProject) {
+        projectId = existingProject.id
+      } else {
+        // Create new project with extracted data
+        const newProject = await db.project.create({
+          data: {
+            userId,
+            clientName: extractedName,
+            address: extractedAddress,
+            projectType: 'Insurance Claim',
+            status: 'created',
+          },
+        })
+        projectId = newProject.id
+      }
+    } else {
+      // Verify provided project belongs to user
+      const project = await db.project.findFirst({
+        where: { id: projectId, userId },
+      })
+      
+      if (!project) {
+        return { success: false, message: 'Project not found' }
       }
     }
     
-    // Verify project belongs to user
-    const project = await db.project.findFirst({
-      where: { id: projectId, userId },
-    })
-    
-    if (!project) {
-      return { success: false, message: 'Project not found' }
-    }
-    
-    // Parse the scope
+    // Parse the scope with the project ID
     const result = await parseCarrierScopeFromUrl(args.fileUrl, projectId, userId)
     
     if (!result.success) {

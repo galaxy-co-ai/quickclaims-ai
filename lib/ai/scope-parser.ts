@@ -9,6 +9,70 @@ import { openai } from './openai'
 import { db } from '@/lib/db'
 
 /**
+ * Extract scope metadata without storing in database
+ * Used for one-shot workflow to get address before creating project
+ */
+export async function extractScopeMetadata(
+  fileUrl: string
+): Promise<{
+  success: boolean
+  message: string
+  data?: {
+    propertyAddress: string | null
+    insuredName: string | null
+    carrier: string | null
+    claimNumber: string | null
+    dateOfLoss: string | null
+    totalRCV: number
+    totalSquares: number | null
+  }
+}> {
+  try {
+    const response = await fetch(fileUrl)
+    if (!response.ok) {
+      throw new Error(`Failed to download PDF: ${response.statusText}`)
+    }
+    
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    
+    const mod = await import('pdf-parse')
+    const pdfParse = mod.default || mod
+    const pdfData = await pdfParse(buffer)
+    const scopeText = pdfData.text
+    
+    if (!scopeText || scopeText.length < 100) {
+      return {
+        success: false,
+        message: 'PDF appears to be empty or unreadable',
+      }
+    }
+    
+    const extracted = await extractScopeData(scopeText)
+    
+    return {
+      success: true,
+      message: 'Extracted scope metadata',
+      data: {
+        propertyAddress: extracted.propertyAddress || null,
+        insuredName: extracted.insuredName || null,
+        carrier: extracted.carrier || null,
+        claimNumber: extracted.claimNumber || null,
+        dateOfLoss: extracted.dateOfLoss || null,
+        totalRCV: extracted.totals.rcv || 0,
+        totalSquares: extracted.roofMetrics?.totalSquares || null,
+      },
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return {
+      success: false,
+      message: `Failed to extract scope metadata: ${errorMessage}`,
+    }
+  }
+}
+
+/**
  * Parse a carrier scope PDF from a URL and store in database
  */
 export async function parseCarrierScopeFromUrl(
@@ -25,6 +89,8 @@ export async function parseCarrierScopeFromUrl(
     totalRCV: number
     dollarPerSquare: number | null
     missingItems: string[]
+    extractedAddress?: string | null
+    extractedClientName?: string | null
   }
 }> {
   try {
@@ -182,6 +248,8 @@ export async function parseCarrierScopeFromUrl(
         totalRCV: carrierScope.totalRCV,
         dollarPerSquare: carrierScope.dollarPerSquare,
         missingItems,
+        extractedAddress: extracted.propertyAddress,
+        extractedClientName: extracted.insuredName,
       },
     }
   } catch (error) {

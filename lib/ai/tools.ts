@@ -121,7 +121,7 @@ export const AI_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'parse_carrier_scope',
-      description: 'Parse a carrier scope PDF file and extract all data (address, carrier, claim #, line items, totals, D$/SQ). Automatically creates/updates claim and stores line items. Use this when user uploads a carrier scope PDF.',
+      description: 'Parse a carrier scope PDF file and extract all data (address, carrier, claim #, line items, totals, D$/SQ). If no projectId is provided, automatically extracts the property address from the scope and finds an existing project with that address or creates a new project. Use this when user uploads a carrier scope PDF - works even without an existing project.',
       parameters: {
         type: 'object',
         properties: {
@@ -131,7 +131,7 @@ export const AI_TOOLS: ChatCompletionTool[] = [
           },
           projectId: {
             type: 'string',
-            description: 'The project ID to associate the parsed scope with. If not provided, will try to find or create based on extracted address.',
+            description: 'Optional: The project ID to associate the parsed scope with. If not provided, will automatically find or create a project based on the extracted address from the scope.',
           },
         },
         required: ['fileUrl'],
