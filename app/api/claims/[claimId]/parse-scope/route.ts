@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { parseCarrierScope, calculateScopeMetrics, identifyMissingItems } from '@/lib/claims/scope-parser'
 import { extractScopeText } from '@/lib/extract/scope'
 import { requireAuthUserId } from '@/lib/auth'
+import { checkAndAdvanceStatus } from '@/lib/claims/workflow-automation'
 
 interface RouteParams {
   params: Promise<{ claimId: string }>
@@ -168,6 +169,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         },
       },
     })
+
+    // Auto-advance claim status based on completed work
+    await checkAndAdvanceStatus(claimId)
 
     return NextResponse.json({
       success: true,

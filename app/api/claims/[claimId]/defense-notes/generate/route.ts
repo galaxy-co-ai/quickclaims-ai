@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateDefenseNote, generateSupplementLetter, generateRebuttal } from '@/lib/ai/anthropic'
 import { requireAuthUserId } from '@/lib/auth'
+import { checkAndAdvanceStatus } from '@/lib/claims/workflow-automation'
 
 interface RouteParams {
   params: Promise<{ claimId: string }>
@@ -198,6 +199,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
       }
     })
+
+    // Auto-advance claim status based on completed work
+    await checkAndAdvanceStatus(claimId)
 
     return NextResponse.json({
       success: true,

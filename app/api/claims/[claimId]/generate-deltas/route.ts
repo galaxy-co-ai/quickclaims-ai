@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateDeltas, PhotoAnalysisResult, generateDefenseNote } from '@/lib/claims/photo-analysis'
 import { requireAuthUserId } from '@/lib/auth'
+import { checkAndAdvanceStatus } from '@/lib/claims/workflow-automation'
 
 /**
  * Verify claim belongs to user
@@ -120,14 +121,8 @@ export async function POST(
       }
     })
 
-    // Update claim status if not already past delta_analysis
-    const statusOrder = ['intake', 'scope_review', 'delta_analysis']
-    if (statusOrder.includes(claim.status)) {
-      await db.claim.update({
-        where: { id: claimId },
-        data: { status: 'delta_analysis' }
-      })
-    }
+    // Auto-advance claim status based on completed work
+    await checkAndAdvanceStatus(claimId)
 
     return NextResponse.json({
       deltas: createdDeltas,

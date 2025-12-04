@@ -15,6 +15,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Measurement report parsing: AI parses EagleView, HOVER, and GAF QuickMeasure PDFs to extract roof measurements and calculate supplement line items
 - Global search with Cmd+K / Ctrl+K command palette to quickly find projects, claims, and documents
 - Email page with Coming Soon placeholder for future Resend integration
+- Claim workflow automation: status auto-advances as tasks are completed (scope parsed, deltas generated, defense notes generated)
 
 ### Changed
 - (none yet)
