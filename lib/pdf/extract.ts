@@ -1,35 +1,66 @@
 /**
- * Robust PDF Text Extraction
+ * Serverless PDF Text Extraction
  * 
- * Uses Mozilla PDF.js (pdfjs-dist) as primary extractor - pure JavaScript, works everywhere.
+ * Uses pdfjs-serverless - a serverless-compatible redistribution of Mozilla's PDF.js
+ * specifically designed for Vercel Edge Runtime and other serverless environments.
  */
 
+import { getDocument } from 'pdfjs-serverless'
+
 /**
- * Extract text from a PDF buffer using PDF.js
- * This is a pure JavaScript implementation that works in all environments.
+ * Extract text from a PDF buffer
  */
-export async function extractTextFromPdf(buffer: Buffer): Promise<{
+export async function extractTextFromPdf(buffer: Buffer | ArrayBuffer): Promise<{
   text: string
   pageCount: number
-  method: 'pdfjs' | 'failed'
+  method: 'pdfjs-serverless' | 'failed'
   error?: string
 }> {
   try {
-    const result = await extractWithPdfJs(buffer)
+    // Convert Buffer to Uint8Array for pdfjs-serverless
+    let data: Uint8Array
+    if (buffer instanceof ArrayBuffer) {
+      data = new Uint8Array(buffer)
+    } else {
+      data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+    }
     
-    if (result.text && result.text.trim().length > 0) {
+    // Load the PDF document
+    const pdfDocument = await getDocument({ data }).promise
+    
+    const textParts: string[] = []
+    
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum)
+      const textContent = await page.getTextContent()
+      
+      // Extract text from items - use type assertion for items with str property
+      const pageText = (textContent.items as Array<{ str?: string }>)
+        .map((item) => item.str || '')
+        .filter(Boolean)
+        .join(' ')
+      
+      if (pageText.trim()) {
+        textParts.push(pageText)
+      }
+    }
+    
+    const fullText = textParts.join('\n\n')
+    
+    if (fullText.trim().length > 0) {
       return {
-        text: result.text.trim(),
-        pageCount: result.pageCount,
-        method: 'pdfjs',
+        text: fullText.trim(),
+        pageCount: pdfDocument.numPages,
+        method: 'pdfjs-serverless',
       }
     }
     
     return {
       text: '',
-      pageCount: 0,
+      pageCount: pdfDocument.numPages,
       method: 'failed',
-      error: 'PDF appears to be empty or contains only images without text',
+      error: 'PDF contains no extractable text (may be scanned/image-only)',
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown PDF parsing error'
@@ -43,53 +74,12 @@ export async function extractTextFromPdf(buffer: Buffer): Promise<{
 }
 
 /**
- * Extract text using PDF.js (Mozilla's PDF library)
- * Pure JavaScript - works in Node.js, Edge, and browser
- */
-async function extractWithPdfJs(buffer: Buffer): Promise<{ text: string; pageCount: number }> {
-  // Dynamic import - use the getDocument export directly
-  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
-  
-  // Load the PDF document
-  const uint8Array = new Uint8Array(buffer)
-  const loadingTask = getDocument({
-    data: uint8Array,
-    useSystemFonts: true,
-  })
-  
-  const pdf = await loadingTask.promise
-  const textParts: string[] = []
-  
-  // Extract text from each page
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum)
-    const textContent = await page.getTextContent()
-    
-    // Combine text items with proper spacing
-    // Filter to items with 'str' property (TextItem, not TextMarkedContent)
-    const pageText = (textContent.items as Array<{ str?: string }>)
-      .map((item) => item.str || '')
-      .filter(Boolean)
-      .join(' ')
-    
-    if (pageText.trim()) {
-      textParts.push(pageText)
-    }
-  }
-  
-  return {
-    text: textParts.join('\n\n'),
-    pageCount: pdf.numPages,
-  }
-}
-
-/**
  * Extract text from a PDF URL
  */
 export async function extractTextFromPdfUrl(url: string): Promise<{
   text: string
   pageCount: number
-  method: 'pdfjs' | 'failed'
+  method: 'pdfjs-serverless' | 'failed'
   error?: string
 }> {
   try {
@@ -105,9 +95,8 @@ export async function extractTextFromPdfUrl(url: string): Promise<{
     }
     
     const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
     
-    return await extractTextFromPdf(buffer)
+    return await extractTextFromPdf(arrayBuffer)
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error'
     return {

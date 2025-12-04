@@ -29,6 +29,7 @@
     "openai": "^6.9.1",
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^5.4.449",
+    "pdfjs-serverless": "^1.1.0",
     "pdfkit": "^0.17.2",
     "prisma": "^5.22.0",
     "react": "19.2.0",
