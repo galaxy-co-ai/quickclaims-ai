@@ -6,7 +6,12 @@ AI-powered insurance claim supplement platform for roofing contractors. Upload c
 
 ## ✨ What's New
 
-### Knowledge Base Expansion - Phase 3 (Latest)
+### Knowledge Base Expansion - Phase 4 (Latest)
+Pricing intelligence and communication templates:
+- **Regional Pricing & O&P** - Regional multipliers, O&P justification rules, carrier-specific policies
+- **Email Templates** - Complete 16-email workflow from intake to claim closure
+
+### Knowledge Base Expansion - Phase 3
 Business intelligence and damage identification:
 - **Depreciation Knowledge** - Material life expectancy tables, RCV/ACV policy differences, depreciation challenges
 - **Damage Pattern Identification** - Hail, wind, and non-storm damage identification with photo documentation standards
@@ -81,6 +86,8 @@ All generated documents auto-save to the **AI Docs** tab of each project.
 - **State Code Amendments** - Florida, Texas, Colorado, and more state-specific requirements
 - **Depreciation Knowledge** - Material life expectancy, RCV/ACV, depreciation challenges
 - **Damage Identification** - Hail, wind, age, manufacturing defect patterns with photo standards
+- **Regional Pricing & O&P** - Regional multipliers, O&P justification with carrier policies
+- **Email Templates** - 16 complete email templates for the entire supplement workflow
 - **Supplement Workflow** - 6-phase process with KPIs
 
 ### Core Platform
@@ -163,17 +170,19 @@ quickclaims-ai/
 │   └── ui/                              # Reusable primitives
 ├── lib/
 │   ├── ai/
-│   │   ├── knowledge/                   # Domain knowledge base
+│   │   ├── knowledge/                   # Domain knowledge base (14 modules)
 │   │   │   ├── carrier-patterns.ts      # Carrier objections & rebuttals
 │   │   │   ├── commonly-missed.ts       # 40+ items carriers omit
-│   │   │   ├── damage-patterns.ts       # Hail/wind damage identification (NEW)
-│   │   │   ├── depreciation.ts          # Material life & depreciation (NEW)
+│   │   │   ├── damage-patterns.ts       # Hail/wind damage identification
+│   │   │   ├── depreciation.ts          # Material life & depreciation
 │   │   │   ├── document-templates.ts    # Output templates
+│   │   │   ├── email-templates.ts       # 16 estimator email templates (NEW)
 │   │   │   ├── index.ts                 # Knowledge base exports
 │   │   │   ├── irc-codes-full.ts        # Building codes
 │   │   │   ├── manufacturer-requirements.ts  # GAF/OC/CT specs
 │   │   │   ├── measurement-intelligence.ts   # EagleView/HOVER parsing
 │   │   │   ├── osha-safety.ts           # 29 CFR 1926 fall protection
+│   │   │   ├── pricing-op.ts            # Regional pricing & O&P rules (NEW)
 │   │   │   ├── state-codes.ts           # State-specific amendments
 │   │   │   ├── supplement-workflow.ts   # Process knowledge
 │   │   │   └── xactimate-full.ts        # 100+ line item codes

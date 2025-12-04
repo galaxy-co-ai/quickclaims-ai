@@ -47,6 +47,12 @@ export * from './depreciation'
 // NEW PHASE 3: Damage identification patterns
 export * from './damage-patterns'
 
+// NEW PHASE 4: Pricing and O&P knowledge
+export * from './pricing-op'
+
+// NEW PHASE 4: Email templates
+export * from './email-templates'
+
 /**
  * Knowledge Summary
  * 
@@ -130,6 +136,19 @@ export * from './damage-patterns'
  * 53. NON_STORM_CONDITIONS - Age, manufacturing, mechanical damage
  * 54. PHOTO_DOCUMENTATION - Photo requirements and best practices
  * 55. getDamagePattern() - Get pattern info by damage type
+ * 
+ * PRICING & O&P (NEW PHASE 4):
+ * 56. REGIONAL_PRICING - Regional labor/material multipliers
+ * 57. OP_JUSTIFICATIONS - When O&P is warranted
+ * 58. CARRIER_OP_RULES - Carrier-specific O&P policies
+ * 59. OP_CALCULATION - How to calculate O&P
+ * 60. getOPDefenseNote() - Generate O&P justification
+ * 
+ * EMAIL TEMPLATES (NEW PHASE 4):
+ * 61. EMAIL_TEMPLATES - 16 email templates for estimator workflow
+ * 62. getEmailTemplate() - Get template by ID
+ * 63. getEmailsByCategory() - Get templates by category
+ * 64. getNextEmail() - Get next email based on claim status
  */
 
 // Utility function to get a full context summary for the AI
@@ -294,6 +313,31 @@ export function getKnowledgeSummary(): string {
 - Normal aging (uniform wear, curling)
 - Foot traffic (straight line patterns)
 - Improper installation (high nailing, exposed fasteners)
+
+### Pricing & O&P Knowledge (NEW)
+**Regional Variations:**
+- West Coast/Northeast: 15-35% higher labor
+- Midwest: Near national average
+- Southeast/Plains: 5-12% below average
+- Surge pricing: 10-30% increase after major storms
+
+**O&P Warranted When:**
+- 3+ trades involved (strong case)
+- 2 trades with complexity factors
+- Steep pitch (7/12+) requiring safety management
+- 2+ stories requiring coordination
+- Complex project management required
+
+**Key Rule:** O&P is 10% overhead + 10% profit on labor and materials. Labor and O&P do NOT depreciate.
+
+### Email Templates (NEW)
+**16 Email Types by Category:**
+- Intake: Missing items request, OK-to-submit
+- Submission: Initial supplement, receipt confirmation
+- Follow-up: 48-hour cadence, evidence add-on, additional docs request
+- Rebuttal: Line-by-line counter, reinspection request
+- Escalation: Manager escalation, homeowner assist
+- Completion: Build day reminder, post-build supplement, final invoice, depreciation release, closure
 
 ### Response Style
 - Defense notes: 2-3 sentences with code citation
