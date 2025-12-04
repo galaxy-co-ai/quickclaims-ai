@@ -12,6 +12,7 @@ import {
   saveDocument
 } from './document-generator'
 import { parseCarrierScopeFromUrl, extractScopeMetadata } from './scope-parser'
+import { parseMeasurementReportFromUrl, calculateSupplementItems } from './measurement-parser'
 
 // User ID is now passed in from the API route
 let currentUserId: string | null = null
@@ -89,6 +90,12 @@ export async function executeToolCall(
         return await parseCarrierScope(args as {
           fileUrl: string
           projectId?: string
+        })
+
+      case 'parse_measurement_report':
+        return await parseMeasurementReport(args as {
+          fileUrl: string
+          projectId: string
         })
 
       // ==========================================
@@ -676,6 +683,98 @@ async function parseCarrierScope(args: {
     return {
       success: false,
       message: `Failed to parse scope: ${errorMessage}`,
+    }
+  }
+}
+
+async function parseMeasurementReport(args: {
+  fileUrl: string
+  projectId: string
+}): Promise<ToolResult> {
+  const userId = getUserId()
+  
+  try {
+    // Verify project belongs to user
+    const project = await db.project.findFirst({
+      where: { id: args.projectId, userId },
+      include: { claim: true },
+    })
+    
+    if (!project) {
+      return { success: false, message: 'Project not found' }
+    }
+    
+    // Parse the measurement report
+    const result = await parseMeasurementReportFromUrl(args.fileUrl)
+    
+    if (!result.success || !result.data) {
+      return {
+        success: false,
+        message: result.message,
+      }
+    }
+    
+    const data = result.data
+    
+    // Calculate supplement items from measurements
+    const supplementItems = calculateSupplementItems(data)
+    
+    // Store measurements in project (could be expanded to a dedicated table)
+    await db.project.update({
+      where: { id: args.projectId },
+      data: {
+        // Store in metadata field or create activity log
+      },
+    })
+    
+    // Log activity
+    if (project.claim) {
+      await db.claimActivity.create({
+        data: {
+          claimId: project.claim.id,
+          action: 'measurement_parsed',
+          description: `Parsed ${data.reportType} measurement report: ${data.totalSquares} squares${data.pitch ? ` at ${data.pitch} pitch` : ''}`,
+          details: {
+            measurements: data,
+            calculatedItems: supplementItems,
+          },
+        },
+      })
+    }
+    
+    // Build response message
+    const measurementSummary = [
+      `**Total Area:** ${data.totalSquares} squares`,
+      data.pitch ? `**Pitch:** ${data.pitch}` : null,
+      data.ridgeLength ? `**Ridge:** ${data.ridgeLength} LF` : null,
+      data.hipLength ? `**Hip:** ${data.hipLength} LF` : null,
+      data.valleyLength ? `**Valley:** ${data.valleyLength} LF` : null,
+      data.eaveLength ? `**Eave:** ${data.eaveLength} LF` : null,
+      data.rakeLength ? `**Rake:** ${data.rakeLength} LF` : null,
+      data.wastePercent ? `**Waste:** ${data.wastePercent}%` : null,
+    ].filter(Boolean).join('\n')
+    
+    const itemsMessage = supplementItems.length > 0
+      ? `\n\n**Calculated Line Items:**\n${supplementItems.map(i => `- ${i.description}: ${i.quantity} ${i.unit}`).join('\n')}`
+      : ''
+    
+    return {
+      success: true,
+      message: `Parsed **${data.reportType}** measurement report for **${project.clientName}**!\n\n${measurementSummary}${itemsMessage}`,
+      data: {
+        measurements: data,
+        calculatedItems: supplementItems,
+      },
+      action: {
+        type: 'navigate',
+        payload: { url: `/projects/${args.projectId}` },
+      },
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return {
+      success: false,
+      message: `Failed to parse measurement report: ${errorMessage}`,
     }
   }
 }

@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Documentation structure (docs/, CHANGELOG.md, plans/)
 - Vitest testing framework with React Testing Library
 - One-shot scope parsing: upload a carrier scope PDF without creating a project first - AI extracts address and auto-creates project
+- Measurement report parsing: AI parses EagleView, HOVER, and GAF QuickMeasure PDFs to extract roof measurements and calculate supplement line items
 
 ### Changed
 - (none yet)

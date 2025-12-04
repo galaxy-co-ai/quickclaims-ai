@@ -139,6 +139,28 @@ export const AI_TOOLS: ChatCompletionTool[] = [
     },
   },
 
+  {
+    type: 'function',
+    function: {
+      name: 'parse_measurement_report',
+      description: 'Parse an EagleView, HOVER, or GAF QuickMeasure PDF to extract roof measurements (total squares, pitch, ridge/hip/valley/eave/rake lengths, waste percentage). Use this when user uploads a measurement report to get accurate quantities for supplement line items.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fileUrl: {
+            type: 'string',
+            description: 'The URL of the measurement report PDF file',
+          },
+          projectId: {
+            type: 'string',
+            description: 'The project ID to associate measurements with',
+          },
+        },
+        required: ['fileUrl', 'projectId'],
+      },
+    },
+  },
+
   // ==========================================
   // DOCUMENT GENERATION (AI-Powered)
   // ==========================================
@@ -440,6 +462,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   
   // File processing
   parse_carrier_scope: 'Parsing carrier scope PDF',
+  parse_measurement_report: 'Parsing measurement report',
   
   // Document generation (AI-powered)
   generate_delta_analysis: 'Generating Delta Analysis Report',
