@@ -39,3 +39,6 @@ export { Tabs, TabList, TabTrigger, TabContent, PillTabs } from "./Tabs";
 
 // Address Autocomplete
 export { AddressAutocomplete } from "./AddressAutocomplete";
+
+// Command Palette
+export { CommandPalette, useCommandPalette } from "./CommandPalette";

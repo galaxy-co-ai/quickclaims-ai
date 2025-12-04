@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { MobileNav, MobileHeader } from "./MobileNav";
 import { ToastProvider, useToastEvents } from "@/components/ui/Toast";
+import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
 
 interface AppShellProps {
   children: ReactNode;
@@ -38,6 +39,9 @@ function AppShellContent({
 }: AppShellProps) {
   // Listen for toast events from outside React
   useToastEvents();
+  
+  // Command palette state (Cmd+K / Ctrl+K)
+  const commandPalette = useCommandPalette();
 
   if (hideNav) {
     return <>{children}</>;
@@ -76,6 +80,12 @@ function AppShellContent({
 
       {/* Mobile Bottom Nav */}
       <MobileNav />
+      
+      {/* Command Palette (Cmd+K / Ctrl+K) */}
+      <CommandPalette
+        isOpen={commandPalette.isOpen}
+        onClose={commandPalette.close}
+      />
     </div>
   );
 }
