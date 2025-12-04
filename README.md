@@ -2,17 +2,30 @@
 
 AI-powered insurance claim supplement platform for roofing contractors. Upload carrier scopes, photos, and measurements — the AI generates professional delta analyses, defense notes, and supplement packages with IRC code citations.
 
-**Last Updated:** December 3, 2025
+**Last Updated:** December 4, 2025
 
 ## ✨ What's New
 
 ### Improvements V1 (December 2025)
-- **Global Search** - Press Cmd+K to search across all projects, claims, and documents
+**Features:**
+- **Global Search** - Press Cmd+K / Ctrl+K to search across all projects, claims, and documents
 - **Smart Scope Parsing** - Upload carrier scopes without creating a project first - AI extracts address and auto-creates
 - **Measurement Report Parsing** - AI parses EagleView, HOVER, and GAF QuickMeasure PDFs automatically
 - **Workflow Automation** - Claim status auto-advances as you complete tasks
 - **Settings Persistence** - Your preferences are now saved to your account
-- **Accessibility Improvements** - Better keyboard navigation and screen reader support
+- **Email Page** - Coming soon placeholder for future Resend integration
+
+**Infrastructure:**
+- **Rate Limiting** - Upstash-based rate limiting protects AI endpoints from abuse
+- **Error Handling** - Custom error pages (error.tsx, global-error.tsx, not-found.tsx)
+- **Loading States** - Skeleton loading UI for all main routes
+- **Security Headers** - HSTS, CSP, X-Frame-Options, and other security headers
+- **CI/CD Pipeline** - GitHub Actions for lint, typecheck, test, and build
+
+**Accessibility:**
+- ARIA attributes on tabs, modals, and photo lightbox
+- Keyboard navigation (Escape to close dialogs)
+- Screen reader improvements
 
 ### Knowledge Base Expansion - Phase 4
 Pricing intelligence and communication templates:
@@ -132,13 +145,19 @@ All generated documents auto-save to the **AI Docs** tab of each project.
   - OpenAI GPT-4o (chat, vision)
   - Anthropic Claude Sonnet (document generation)
 - **Caching**: Upstash Redis
+- **Rate Limiting**: Upstash Ratelimit
 - **Vector Search**: Upstash Vector
+- **Testing**: Vitest + React Testing Library
+- **CI/CD**: GitHub Actions
 - **Deployment**: Vercel
 
 ## Project Structure
 
 ```
 quickclaims-ai/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                       # CI pipeline (lint, test, build)
 ├── app/
 │   ├── api/
 │   │   ├── ai/
@@ -151,59 +170,48 @@ quickclaims-ai/
 │   │   │   ├── generate-deltas/         # Delta detection engine
 │   │   │   └── parse-scope/             # Carrier scope parsing
 │   │   ├── conversations/               # Chat persistence
-│   │   │   ├── [id]/                    # Single conversation
-│   │   │   │   └── messages/            # Add messages
-│   │   │   └── active/                  # Get/create active convo
-│   │   ├── documents/                   # Document listing
-│   │   ├── exports/                     # CSV/PDF exports
-│   │   ├── photos/analyze/              # Batch photo analysis
-│   │   ├── projects/
-│   │   │   ├── [id]/                    # Project GET/PATCH/DELETE
-│   │   │   └── route.ts                 # Project list/create
-│   │   ├── uploads/                     # File uploads
+│   │   ├── search/                      # Global search API
+│   │   ├── settings/                    # User preferences API
 │   │   └── webhooks/clerk/              # Clerk user sync
-│   ├── dashboard/                       # AI chat interface
+│   ├── dashboard/
+│   │   ├── page.tsx                     # AI chat interface
+│   │   └── loading.tsx                  # Loading skeleton
 │   ├── documents/                       # Documents list
+│   ├── email/                           # Email page (coming soon)
 │   ├── projects/[id]/                   # Project detail (4 tabs)
 │   ├── settings/                        # User settings
+│   ├── error.tsx                        # Error boundary
+│   ├── global-error.tsx                 # Root error handler
+│   ├── not-found.tsx                    # 404 page
 │   ├── sign-in/                         # Clerk sign-in
 │   └── sign-up/                         # Clerk sign-up
 ├── components/
 │   ├── claims/                          # Claim UI components
 │   ├── features/                        # Feature modals
-│   │   ├── EditProjectModal.tsx         # Edit project dialog
-│   │   └── NewProjectModal.tsx          # Create project dialog
 │   ├── layout/                          # AppShell, Sidebar, MobileNav
 │   ├── project/                         # Project components
-│   └── ui/                              # Reusable primitives
+│   └── ui/
+│       ├── CommandPalette.tsx           # Cmd+K global search
+│       └── ...                          # Other UI primitives
+├── docs/
+│   ├── CHANGELOG.md                     # Version history
+│   ├── BLOCKERS.md                      # Implementation blockers
+│   └── plans/                           # Implementation plans
 ├── lib/
 │   ├── ai/
 │   │   ├── knowledge/                   # Domain knowledge base (14 modules)
-│   │   │   ├── carrier-patterns.ts      # Carrier objections & rebuttals
-│   │   │   ├── commonly-missed.ts       # 40+ items carriers omit
-│   │   │   ├── damage-patterns.ts       # Hail/wind damage identification
-│   │   │   ├── depreciation.ts          # Material life & depreciation
-│   │   │   ├── document-templates.ts    # Output templates
-│   │   │   ├── email-templates.ts       # 16 estimator email templates (NEW)
-│   │   │   ├── index.ts                 # Knowledge base exports
-│   │   │   ├── irc-codes-full.ts        # Building codes
-│   │   │   ├── manufacturer-requirements.ts  # GAF/OC/CT specs
-│   │   │   ├── measurement-intelligence.ts   # EagleView/HOVER parsing
-│   │   │   ├── osha-safety.ts           # 29 CFR 1926 fall protection
-│   │   │   ├── pricing-op.ts            # Regional pricing & O&P rules (NEW)
-│   │   │   ├── state-codes.ts           # State-specific amendments
-│   │   │   ├── supplement-workflow.ts   # Process knowledge
-│   │   │   └── xactimate-full.ts        # 100+ line item codes
-│   │   ├── anthropic.ts                 # Claude integration
-│   │   ├── document-generator.ts        # Document generation
-│   │   ├── executor.ts                  # Tool execution
-│   │   ├── openai.ts                    # GPT-4 integration
+│   │   ├── measurement-parser.ts        # EagleView/HOVER parser
 │   │   ├── scope-parser.ts              # Carrier scope PDF parsing
 │   │   └── tools.ts                     # AI tool definitions
-│   ├── auth.ts                          # Clerk auth utilities
-│   ├── claims/                          # Claim utilities
-│   └── validations/                     # Zod schemas
+│   ├── claims/
+│   │   └── workflow-automation.ts       # Auto-advance claim status
+│   ├── rate-limit.ts                    # Upstash rate limiting
+│   ├── validations/
+│   │   └── settings.ts                  # Settings Zod schemas
+│   └── ...
 ├── middleware.ts                        # Clerk route protection
+├── next.config.ts                       # Security headers, config
+├── vitest.config.ts                     # Test configuration
 ├── prisma/
 │   └── schema.prisma                    # Database schema
 ├── README.md                            # This file
@@ -235,7 +243,8 @@ quickclaims-ai/
 | `update_project` | Edit project details |
 | `list_projects` | Get user's projects |
 | `get_project_details` | Full project info |
-| `parse_carrier_scope` | Parse carrier scope PDF and extract all data |
+| `parse_carrier_scope` | Parse carrier scope PDF and extract all data (auto-creates project if needed) |
+| `parse_measurement_report` | Parse EagleView/HOVER/GAF QuickMeasure PDFs for roof measurements |
 | `generate_delta_analysis` | Create delta report comparing scope to code requirements |
 | `generate_cover_letter` | Professional carrier submission email |
 | `generate_defense_notes` | Xactimate-ready notes with IRC citations |
@@ -310,6 +319,8 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run dev          # Development server (Turbopack)
 npm run build        # Production build
 npm run lint         # ESLint check
+npm run test         # Run tests in watch mode
+npm run test:run     # Run tests once
 npx tsc --noEmit     # TypeScript check
 npx prisma studio    # Database GUI
 npx prisma db push   # Push schema changes
